@@ -1,0 +1,43 @@
+{
+  "name": "interviewsite-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "ServiceNow Interview Questions Platform - API server",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node src/index.js",
+    "start": "node src/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "seed": "node prisma/seed.js",
+    "test": "cross-env NODE_ENV=test DATABASE_URL=\"file:./test.db?connection_limit=1&pool_timeout=30\" JWT_SECRET=test-jwt-secret-not-for-production-use-only jest --runInBand"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.6",
+    "csv-stringify": "^6.5.1",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "pdfkit": "^0.15.0",
+    "uuid": "^11.1.1",
+    "xml-js": "^1.6.11",
+    "xmlbuilder2": "^4.0.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "prisma": "^5.19.1",
+    "supertest": "^7.0.0"
+  }
+}

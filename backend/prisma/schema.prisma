@@ -1,0 +1,175 @@
+// Prisma schema — defaults to SQLite for zero-setup local dev/tests.
+// To run against PostgreSQL in production, set DATABASE_URL to a postgres://
+// connection string and change provider below to "postgresql". Enum fields
+// below are typed as String because SQLite has no native enum support;
+// allowed values are enforced in src/utils/enums.js + Zod validators. If you
+// switch to PostgreSQL you may optionally convert these back to Prisma enums.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role: REGULAR_USER | WRITER | ADMIN
+// QuestionFormat: TEXT | CODE | BOTH
+// Difficulty: BEGINNER | INTERMEDIATE | ADVANCED
+// AuditAction: LOGIN | LOGIN_FAILED | LOGOUT | CREATE | EDIT | DELETE | IMPORT | EXPORT | ROLE_CHANGE | PASSWORD_RESET | ACCOUNT_DEACTIVATED
+// AuditTargetType: USER | QUESTION | MODULE | PASSWORD_RESET | SESSION
+
+model User {
+  id                    String    @id @default(uuid())
+  username              String    @unique
+  email                 String?
+  passwordHash          String
+  role                  String    @default("REGULAR_USER")
+  bio                   String?
+  profileAvatarUrl      String?
+  isActive              Boolean   @default(true)
+  failedLoginAttempts   Int       @default(0)
+  accountLockedUntil    DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  lastLogin             DateTime?
+
+  securityQuestions     SecurityQuestion[]
+  questions             Question[]           @relation("QuestionCreator")
+  questionVersions      QuestionVersion[]
+  favorites             Favorite[]
+  auditLogs             AuditLog[]
+  importsExports        ImportExport[]
+  modulesCreated        Module[]
+  sessions              Session[]
+
+  @@index([role])
+}
+
+model SecurityQuestion {
+  id           String @id @default(uuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question     String
+  answerHash   String
+
+  @@index([userId])
+}
+
+model Module {
+  id             String     @id @default(uuid())
+  name           String     @unique
+  description    String?
+  createdById    String?
+  createdBy      User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  isArchived     Boolean    @default(false)
+  nextSerial     Int        @default(1)
+
+  questions      Question[]
+
+  @@index([isArchived])
+}
+
+model Question {
+  id            String           @id @default(uuid())
+  moduleId      String
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  serialNumber  Int
+  title         String
+  content       String
+  format        String           @default("TEXT")
+  codeLanguage  String?
+  answer        String
+  difficulty    String           @default("BEGINNER")
+  tags          String           @default("[]") // JSON-encoded string array (SQLite has no native array type)
+  createdById   String?
+  createdBy     User?            @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  viewCount     Int              @default(0)
+
+  versions      QuestionVersion[]
+  favorites     Favorite[]
+
+  @@unique([moduleId, serialNumber])
+  @@index([moduleId])
+  @@index([difficulty])
+  @@index([format])
+}
+
+model QuestionVersion {
+  id               String   @id @default(uuid())
+  questionId       String
+  question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  versionNumber    Int
+  previousContent  String   // JSON snapshot of the question before this change
+  changedById      String?
+  changedBy        User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  changeDescription String?
+  changedAt        DateTime @default(now())
+
+  @@index([questionId])
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@index([questionId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String
+  targetId   String?
+  details    String?  // JSON-encoded context
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+  status     String   @default("success") // success | failure
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+}
+
+model ImportExport {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action          String   // import | export
+  fileName        String
+  fileFormat      String   // json | csv | xlsx | pdf | xml
+  recordCount     Int      @default(0)
+  modulesIncluded String   @default("[]") // JSON-encoded array of module names
+  status          String   // success | failed | partial
+  errorDetails    String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime
+  lastActivity DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+  isActive     Boolean  @default(true)
+
+  @@index([userId])
+  @@index([tokenHash])
+}
