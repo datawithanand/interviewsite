@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth, isAdmin } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import NotificationBell from './NotificationBell';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -22,6 +23,7 @@ export default function Header({ onMenuClick }) {
       >
         {dark ? '☀️' : '🌙'}
       </button>
+      <NotificationBell />
       {isAdmin(user) && (
         <Link to="/admin" className="text-sm text-brand-600 hover:underline hidden sm:inline">
           Admin

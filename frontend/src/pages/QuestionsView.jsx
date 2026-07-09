@@ -1,14 +1,34 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth, isWriterOrAdmin } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { DIFFICULTIES, FORMATS, FORMAT_ICON, DIFFICULTY_COLOR } from '../constants';
 import QuestionFormModal from '../components/QuestionFormModal';
 import QuestionDetailModal from '../components/QuestionDetailModal';
 
+const RECENT_SEARCHES_KEY = 'recentSearches';
+const MAX_RECENT_SEARCHES = 10;
+
+function loadRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function pushRecentSearch(term) {
+  if (!term || !term.trim()) return;
+  const existing = loadRecentSearches().filter((t) => t !== term);
+  const updated = [term, ...existing].slice(0, MAX_RECENT_SEARCHES);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
+}
+
 export default function QuestionsView() {
   const { moduleId } = useParams();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const canManage = isWriterOrAdmin(user);
 
   const [modules, setModules] = useState([]);
@@ -28,9 +48,36 @@ export default function QuestionsView() {
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [detailId, setDetailId] = useState(null);
 
+  const [savedSearches, setSavedSearches] = useState([]);
+  const [savedSearchOpen, setSavedSearchOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState(loadRecentSearches());
+
+  const searchInputRef = useRef(null);
+
   useEffect(() => {
     api.get('/modules').then((res) => setModules(res.modules));
   }, [formOpen]);
+
+  const loadSavedSearches = useCallback(() => {
+    api.get('/saved-searches').then((res) => setSavedSearches(res.savedSearches));
+  }, []);
+
+  useEffect(() => {
+    loadSavedSearches();
+  }, [loadSavedSearches]);
+
+  // Cmd/Ctrl+K focuses the search box from anywhere on the page.
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -58,6 +105,16 @@ export default function QuestionsView() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (search.trim()) {
+        pushRecentSearch(search.trim());
+        setRecentSearches(loadRecentSearches());
+      }
+    }, 1200); // debounce so every keystroke doesn't spam history
+    return () => clearTimeout(handle);
+  }, [search]);
+
   const currentModule = modules.find((m) => m.id === moduleId);
 
   const toggleFavorite = async (q) => {
@@ -70,11 +127,61 @@ export default function QuestionsView() {
     if (!window.confirm(`Delete question "${q.title}"?`)) return;
     await api.del(`/questions/${q.id}`);
     load();
+    showToast(`Deleted "${q.title}"`, {
+      action: {
+        label: 'Undo',
+        onClick: async () => {
+          try {
+            await api.post('/questions', {
+              moduleId: q.moduleId,
+              serialNumber: q.serialNumber,
+              title: q.title,
+              content: q.content,
+              format: q.format,
+              codeLanguage: q.codeLanguage,
+              answer: q.answer,
+              difficulty: q.difficulty,
+              tags: q.tags,
+            });
+            load();
+          } catch {
+            showToast('Could not undo — serial number was reused since deletion.', { durationMs: 5000 });
+          }
+        },
+      },
+    });
   };
 
   const duplicateQuestion = async (q) => {
     await api.post(`/questions/${q.id}/duplicate`, {});
     load();
+  };
+
+  const currentFilters = { moduleId, difficulty, format, sort, favoritesOnly, q: search };
+
+  const applySavedSearch = (s) => {
+    setDifficulty(s.filters.difficulty || '');
+    setFormat(s.filters.format || '');
+    setSort(s.filters.sort || 'serial');
+    setFavoritesOnly(!!s.filters.favoritesOnly);
+    setSearch(s.filters.q || '');
+    setSavedSearchOpen(false);
+  };
+
+  const saveCurrentSearch = async () => {
+    const name = window.prompt('Name this search:');
+    if (!name) return;
+    try {
+      await api.post('/saved-searches', { name, filters: currentFilters });
+      loadSavedSearches();
+    } catch (err) {
+      showToast(err.message, { durationMs: 5000 });
+    }
+  };
+
+  const deleteSavedSearch = async (id) => {
+    await api.del(`/saved-searches/${id}`);
+    loadSavedSearches();
   };
 
   return (
@@ -85,12 +192,24 @@ export default function QuestionsView() {
       </div>
 
       <div className="flex flex-wrap gap-2 items-center mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-        <input
-          className="flex-1 min-w-[180px] rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-1.5 text-sm"
-          placeholder="Search title, content, answer…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="relative flex-1 min-w-[180px]">
+          <input
+            ref={searchInputRef}
+            list="recent-searches"
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-1.5 text-sm pr-14"
+            placeholder="Search title, content, answer…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <datalist id="recent-searches">
+            {recentSearches.map((t) => (
+              <option key={t} value={t} />
+            ))}
+          </datalist>
+          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded border border-gray-300 dark:border-gray-600 text-gray-400 pointer-events-none">
+            ⌘K
+          </kbd>
+        </div>
         <select
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm"
           value={difficulty}
@@ -129,6 +248,34 @@ export default function QuestionsView() {
           <input type="checkbox" checked={favoritesOnly} onChange={(e) => setFavoritesOnly(e.target.checked)} />
           Favorites
         </label>
+
+        <div className="relative">
+          <button
+            onClick={() => setSavedSearchOpen((v) => !v)}
+            className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600"
+          >
+            Saved ({savedSearches.length})
+          </button>
+          {savedSearchOpen && (
+            <div className="absolute left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 text-sm">
+              <button onClick={saveCurrentSearch} className="w-full text-left px-3 py-2 text-brand-600 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700">
+                + Save current search
+              </button>
+              {savedSearches.length === 0 && <p className="px-3 py-2 text-xs text-gray-400">No saved searches yet.</p>}
+              {savedSearches.map((s) => (
+                <div key={s.id} className="flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <button onClick={() => applySavedSearch(s)} className="text-left flex-1 truncate">
+                    {s.name}
+                  </button>
+                  <button onClick={() => deleteSavedSearch(s.id)} className="text-xs text-red-500 ml-2">
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 text-xs">
           <button
             onClick={() => setView('list')}

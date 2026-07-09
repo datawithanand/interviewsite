@@ -6,6 +6,8 @@ const { hashPassword, verifyPassword, validatePasswordStrength } = require('../u
 const { validate } = require('../utils/validation');
 const { recordAudit } = require('../utils/audit');
 const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../utils/enums');
+const { getSettings } = require('../utils/settings');
+const { revokeAllSessionsForUser } = require('../utils/session');
 
 const router = express.Router();
 
@@ -70,11 +72,15 @@ router.post('/change-password', async (req, res, next) => {
     const valid = await verifyPassword(data.currentPassword, req.user.passwordHash);
     if (!valid) return res.status(401).json({ error: 'Current password is incorrect.' });
 
-    const strengthError = validatePasswordStrength(data.newPassword);
+    const settings = await getSettings();
+    const strengthError = validatePasswordStrength(data.newPassword, settings);
     if (strengthError) return res.status(400).json({ error: strengthError });
 
     const passwordHash = await hashPassword(data.newPassword);
     await prisma.user.update({ where: { id: req.user.id }, data: { passwordHash } });
+
+    // Keep the current session alive, sign out everywhere else.
+    await revokeAllSessionsForUser(req.user.id, req.session.id);
 
     await recordAudit({
       userId: req.user.id,
@@ -122,6 +128,7 @@ router.post('/delete', async (req, res, next) => {
     if (!valid) return res.status(401).json({ error: 'Password is incorrect.' });
 
     await prisma.user.update({ where: { id: req.user.id }, data: { isActive: false } });
+    await revokeAllSessionsForUser(req.user.id);
     res.json({ message: 'Account deactivated.' });
   } catch (err) {
     next(err);

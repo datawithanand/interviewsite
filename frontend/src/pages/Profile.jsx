@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import SessionsPanel from '../components/SessionsPanel';
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
@@ -120,6 +121,8 @@ export default function Profile() {
           Update Password
         </button>
       </form>
+
+      <SessionsPanel />
     </div>
   );
 }

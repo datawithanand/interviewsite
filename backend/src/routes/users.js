@@ -5,7 +5,10 @@ const { requireAdmin } = require('../middleware/rbac');
 const { hashPassword, validatePasswordStrength } = require('../utils/password');
 const { validate, roleUpdateSchema, adminResetPasswordSchema } = require('../utils/validation');
 const { recordAudit } = require('../utils/audit');
-const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } = require('../utils/enums');
+const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, NOTIFICATION_TYPES } = require('../utils/enums');
+const { getSettings } = require('../utils/settings');
+const { revokeAllSessionsForUser } = require('../utils/session');
+const { notify } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -67,6 +70,13 @@ router.patch('/:id/role', async (req, res, next) => {
       ipAddress: req.ip,
     });
 
+    await notify({
+      userId: target.id,
+      actorId: req.user.id,
+      type: NOTIFICATION_TYPES.ROLE_CHANGED,
+      message: `Your role was changed from ${target.role.replace('_', ' ')} to ${data.role.replace('_', ' ')}.`,
+    });
+
     res.json({ user: toPublicUser(updated) });
   } catch (err) {
     next(err);
@@ -76,7 +86,8 @@ router.patch('/:id/role', async (req, res, next) => {
 router.post('/:id/reset-password', async (req, res, next) => {
   try {
     const data = validate(adminResetPasswordSchema, req.body);
-    const strengthError = validatePasswordStrength(data.newPassword);
+    const settings = await getSettings();
+    const strengthError = validatePasswordStrength(data.newPassword, settings);
     if (strengthError) return res.status(400).json({ error: strengthError });
 
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
@@ -87,6 +98,7 @@ router.post('/:id/reset-password', async (req, res, next) => {
       where: { id: target.id },
       data: { passwordHash, failedLoginAttempts: 0, accountLockedUntil: null },
     });
+    await revokeAllSessionsForUser(target.id);
 
     await recordAudit({
       userId: req.user.id,
@@ -112,6 +124,7 @@ router.patch('/:id/deactivate', async (req, res, next) => {
     if (!target) return res.status(404).json({ error: 'User not found.' });
 
     const updated = await prisma.user.update({ where: { id: target.id }, data: { isActive: false } });
+    await revokeAllSessionsForUser(target.id);
 
     await recordAudit({
       userId: req.user.id,
@@ -134,6 +147,29 @@ router.patch('/:id/reactivate', async (req, res, next) => {
 
     const updated = await prisma.user.update({ where: { id: target.id }, data: { isActive: true } });
     res.json({ user: toPublicUser(updated) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Force logout from every device — revokes all of the target user's active sessions.
+router.post('/:id/force-logout', async (req, res, next) => {
+  try {
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: 'User not found.' });
+
+    await revokeAllSessionsForUser(target.id);
+
+    await recordAudit({
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.LOGOUT,
+      targetType: AUDIT_TARGET_TYPES.SESSION,
+      targetId: target.id,
+      details: { scope: 'admin_force_logout', targetUsername: target.username },
+      ipAddress: req.ip,
+    });
+
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

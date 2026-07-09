@@ -1,10 +1,11 @@
 const express = require('express');
 const prisma = require('../db');
 const { hashPassword, verifyPassword, validatePasswordStrength } = require('../utils/password');
-const { signToken } = require('../utils/jwt');
 const { authenticate } = require('../middleware/auth');
 const { recordAudit } = require('../utils/audit');
 const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, ROLES } = require('../utils/enums');
+const { getSettings } = require('../utils/settings');
+const { createSession, revokeSession, revokeAllSessionsForUser } = require('../utils/session');
 const {
   validate,
   registerSchema,
@@ -15,8 +16,6 @@ const {
 
 const router = express.Router();
 
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCK_DURATION_MS = 15 * 60 * 1000;
 const SECURITY_QUESTIONS_TO_PRESENT = 3;
 const SECURITY_QUESTIONS_REQUIRED_CORRECT = 2;
 
@@ -35,9 +34,17 @@ function toPublicUser(user) {
 
 router.post('/register', async (req, res, next) => {
   try {
+    const settings = await getSettings();
+    const userCount = await prisma.user.count();
+    // First registered user always becomes admin (bootstrap), regardless of
+    // whether registration is later disabled for everyone else.
+    if (!settings.registrationEnabled && userCount > 0) {
+      return res.status(403).json({ error: 'Registration is currently disabled. Contact an administrator.' });
+    }
+
     const data = validate(registerSchema, req.body);
 
-    const strengthError = validatePasswordStrength(data.password);
+    const strengthError = validatePasswordStrength(data.password, settings);
     if (strengthError) return res.status(400).json({ error: strengthError });
 
     const existing = await prisma.user.findUnique({ where: { username: data.username } });
@@ -51,9 +58,6 @@ router.post('/register', async (req, res, next) => {
       }))
     );
 
-    // First registered user becomes admin so the platform is bootstrappable
-    // without a separate seed step; every subsequent signup is a regular user.
-    const userCount = await prisma.user.count();
     const role = userCount === 0 ? ROLES.ADMIN : ROLES.REGULAR_USER;
 
     const user = await prisma.user.create({
@@ -75,7 +79,7 @@ router.post('/register', async (req, res, next) => {
       ipAddress: req.ip,
     });
 
-    const token = signToken({ sub: user.id, role: user.role });
+    const { token } = await createSession(user, { ipAddress: req.ip, userAgent: req.headers['user-agent'] });
     res.status(201).json({ token, user: toPublicUser(user) });
   } catch (err) {
     next(err);
@@ -84,6 +88,7 @@ router.post('/register', async (req, res, next) => {
 
 router.post('/login', async (req, res, next) => {
   try {
+    const settings = await getSettings();
     const data = validate(loginSchema, req.body);
     const user = await prisma.user.findUnique({ where: { username: data.username } });
 
@@ -112,12 +117,12 @@ router.post('/login', async (req, res, next) => {
     const valid = await verifyPassword(data.password, user.passwordHash);
     if (!valid) {
       const failedLoginAttempts = user.failedLoginAttempts + 1;
-      const lock = failedLoginAttempts >= MAX_FAILED_ATTEMPTS;
+      const lock = failedLoginAttempts >= settings.maxFailedLoginAttempts;
       await prisma.user.update({
         where: { id: user.id },
         data: {
           failedLoginAttempts: lock ? 0 : failedLoginAttempts,
-          accountLockedUntil: lock ? new Date(Date.now() + LOCK_DURATION_MS) : null,
+          accountLockedUntil: lock ? new Date(Date.now() + settings.lockoutDurationMinutes * 60 * 1000) : null,
         },
       });
       await recordAudit({
@@ -145,8 +150,24 @@ router.post('/login', async (req, res, next) => {
       ipAddress: req.ip,
     });
 
-    const token = signToken({ sub: user.id, role: user.role });
+    const { token } = await createSession(user, { ipAddress: req.ip, userAgent: req.headers['user-agent'] });
     res.json({ token, user: toPublicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/logout', authenticate, async (req, res, next) => {
+  try {
+    await revokeSession(req.session.id);
+    await recordAudit({
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.LOGOUT,
+      targetType: AUDIT_TARGET_TYPES.SESSION,
+      targetId: req.session.id,
+      ipAddress: req.ip,
+    });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
@@ -154,6 +175,60 @@ router.post('/login', async (req, res, next) => {
 
 router.get('/me', authenticate, (req, res) => {
   res.json({ user: toPublicUser(req.user) });
+});
+
+// ---------- Session management (self-service) ----------
+
+router.get('/sessions', authenticate, async (req, res, next) => {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: { userId: req.user.id, isActive: true },
+      orderBy: { lastActivity: 'desc' },
+    });
+    res.json({
+      sessions: sessions.map((s) => ({
+        id: s.id,
+        ipAddress: s.ipAddress,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt,
+        lastActivity: s.lastActivity,
+        expiresAt: s.expiresAt,
+        current: s.id === req.session.id,
+      })),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/sessions/:id', authenticate, async (req, res, next) => {
+  try {
+    const session = await prisma.session.findUnique({ where: { id: req.params.id } });
+    if (!session || session.userId !== req.user.id) {
+      return res.status(404).json({ error: 'Session not found.' });
+    }
+    await revokeSession(session.id);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Force logout from all devices except the one making this request.
+router.post('/sessions/revoke-all', authenticate, async (req, res, next) => {
+  try {
+    await revokeAllSessionsForUser(req.user.id, req.session.id);
+    await recordAudit({
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.LOGOUT,
+      targetType: AUDIT_TARGET_TYPES.SESSION,
+      details: { scope: 'all_other_devices' },
+      ipAddress: req.ip,
+    });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
 });
 
 // Step 1: given a username, return a random subset of that user's security
@@ -183,9 +258,10 @@ router.post('/forgot-password/start', async (req, res, next) => {
 // Step 2: verify answers to the presented questions and set a new password.
 router.post('/forgot-password/verify', async (req, res, next) => {
   try {
+    const settings = await getSettings();
     const data = validate(forgotPasswordVerifySchema, req.body);
 
-    const strengthError = validatePasswordStrength(data.newPassword);
+    const strengthError = validatePasswordStrength(data.newPassword, settings);
     if (strengthError) return res.status(400).json({ error: strengthError });
 
     const user = await prisma.user.findUnique({
@@ -223,6 +299,10 @@ router.post('/forgot-password/verify', async (req, res, next) => {
       where: { id: user.id },
       data: { passwordHash, failedLoginAttempts: 0, accountLockedUntil: null },
     });
+
+    // Credentials changed — invalidate every existing session so a
+    // possibly-compromised device is signed out everywhere.
+    await revokeAllSessionsForUser(user.id);
 
     await recordAudit({
       userId: user.id,

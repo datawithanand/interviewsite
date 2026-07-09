@@ -39,6 +39,11 @@ export default function UsersTab() {
     load();
   };
 
+  const forceLogout = async (u) => {
+    if (!window.confirm(`Force logout ${u.username} from all devices?`)) return;
+    await api.post(`/users/${u.id}/force-logout`, {});
+  };
+
   const submitReset = async (e) => {
     e.preventDefault();
     setError('');
@@ -116,6 +121,9 @@ export default function UsersTab() {
                   </button>
                   <button onClick={() => toggleActive(u)} className="text-xs text-red-600 hover:underline">
                     {u.isActive ? 'Deactivate' : 'Reactivate'}
+                  </button>
+                  <button onClick={() => forceLogout(u)} className="text-xs text-gray-600 hover:underline">
+                    Force Logout
                   </button>
                 </td>
               </tr>

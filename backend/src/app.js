@@ -12,6 +12,10 @@ const questionsRoutes = require('./routes/questions');
 const importExportRoutes = require('./routes/importExport');
 const auditLogsRoutes = require('./routes/auditLogs');
 const statsRoutes = require('./routes/stats');
+const settingsRoutes = require('./routes/settings');
+const notificationsRoutes = require('./routes/notifications');
+const commentsRoutes = require('./routes/comments');
+const savedSearchesRoutes = require('./routes/savedSearches');
 
 function createApp() {
   const app = express();
@@ -43,6 +47,12 @@ function createApp() {
   app.use('/api/import-export', importExportRoutes);
   app.use('/api/audit-logs', auditLogsRoutes);
   app.use('/api/stats', statsRoutes);
+  app.use('/api/settings', settingsRoutes);
+  app.use('/api/notifications', notificationsRoutes);
+  app.use('/api/saved-searches', savedSearchesRoutes);
+  // comments routes are mounted at /api since they define their own
+  // /questions/:questionId/comments and /comments/:id sub-paths.
+  app.use('/api', commentsRoutes);
 
   // 404 handler
   app.use('/api', (req, res) => res.status(404).json({ error: 'Not found.' }));

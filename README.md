@@ -9,7 +9,7 @@ Two conflicts in the requirements were resolved before implementation (see conve
 1. **Writer permissions**: §1 said writers can only edit/delete *their own* questions; the permission table and §6.5 said writers have full edit/delete rights over *all* questions. Implemented the broader rule (table + §6.5) since it was stated twice and is simpler to reason about — writers and admins both have full content rights; only user/role management is admin-only.
 2. **Favorites duplication**: the schema had both a `favorites` table and an `is_favorite_for` JSON column on `questions`. Kept only the `favorites` table (relational, avoids drift).
 
-Scope trims from the original doc (flagged, not silently dropped): scheduled/automated exports and outbound email notifications are not implemented — both require a job scheduler / mail service outside this app's runtime, and are natural Phase 2 additions once a deployment target is chosen.
+Scope trims from the original doc (flagged, not silently dropped): scheduled/automated exports and outbound email notifications are not implemented — both require a job scheduler / mail service outside this app's runtime. In-app notifications (bell icon) are implemented as the practical substitute for the "notify writer when their question is edited" requirement.
 
 ## Stack
 
@@ -52,7 +52,8 @@ npm run dev                 # http://localhost:5173, proxies /api to localhost:4
 
 ```bash
 cd backend
-npm test                    # 45 tests: auth, RBAC, modules, questions, import/export, audit logs
+npm test                    # 68 tests: auth, sessions, settings, RBAC, modules, questions,
+                             # import/export, audit logs, notifications, comments, saved searches
 ```
 
 Tests run against an isolated `test.db` (created/reset by `tests/globalSetup.js`), not your dev database.
@@ -78,9 +79,8 @@ This brings up the API on :4000 and the frontend (nginx, reverse-proxying `/api`
 
 ## Security notes
 
-- Passwords: bcrypt, 12 rounds. Policy: 8+ chars, at least one letter and one number (see `src/utils/password.js` to tighten).
-- Account lockout: 5 failed logins → 15 minute lock.
-- JWT expires in 8h by default (`JWT_EXPIRES_IN`).
+- Passwords: bcrypt, 12 rounds. Policy (min length, letter/number requirements), lockout threshold/duration, and session timeout are admin-configurable at runtime via Admin Panel → Settings (`GET/PATCH /api/settings`) — defaults: 8+ chars with a letter and number, 5 failed logins → 15 minute lock, 8h sessions.
+- Sessions are tracked server-side (`Session` table): every JWT carries a session id, and `authenticate` middleware checks the session is still active on every request. This makes sign-out, "sign out all other devices", and admin force-logout actually revoke access immediately — a stolen JWT alone isn't enough once its session is revoked. Password reset (self-service or security-question-based) revokes all sessions automatically.
 - Rate limiting on `/api/auth/*` (20 req/15min in production) and a general API limiter.
 - All inputs validated server-side with Zod; Prisma parameterizes all queries (no raw SQL string interpolation).
 - CSV/Excel export sanitizes cells that start with `=`, `+`, `-`, `@` to prevent formula-injection when files are reopened in Excel/Sheets.
@@ -95,7 +95,10 @@ This brings up the API on :4000 and the frontend (nginx, reverse-proxying `/api`
 - Modules: create/rename/soft-delete (⋯ menu), question-count badge, stats.
 - Questions: text/code/both formats, Monaco syntax highlighting, difficulty, tags, per-module auto-incrementing serial numbers (race-safe), search/filter/sort, list/card view, favorites, duplicate, bulk delete/tag/difficulty/move, edit history with rollback.
 - Import/export: JSON, CSV, Excel (.xlsx), XML, PDF (export only) — preview-before-commit, serial number preservation with gap retention, conflict resolution (skip/overwrite/renumber).
-- Admin panel: user table with role toggle, forced password reset, deactivate/reactivate; audit log viewer + CSV export; stats dashboard.
+- Admin panel: user table with role toggle, forced password reset, deactivate/reactivate, force-logout-all-devices; audit log viewer + CSV export; stats dashboard; **Settings tab** for password policy / lockout / session timeout / registration toggle.
+- **Collaboration**: threaded comments on questions (admin can pin), in-app notification bell (question edited/deleted by someone else, role changed, new comment) with unread badge and mark-read.
+- **Session management**: Profile page lists your active sessions (device/IP/last-active) with per-session revoke and "sign out all other devices"; admins can force-logout any user.
+- **UX affordances**: Cmd/Ctrl+K focuses search from anywhere, Esc closes modals, Ctrl/Cmd+S saves the question form, undo toast (with a real "Undo" action, not just a message) after deleting a question, saved search filters (named, per-user), recent-search autocomplete via browser history.
 - Dark mode (persisted, respects OS preference on first load).
 
 See `docs/API.md` for the full endpoint reference.

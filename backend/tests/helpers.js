@@ -2,7 +2,7 @@ const { v4: uuid } = require('uuid');
 const createApp = require('../src/app');
 const prisma = require('../src/db');
 const { hashPassword } = require('../src/utils/password');
-const { signToken } = require('../src/utils/jwt');
+const { createSession } = require('../src/utils/session');
 const { ROLES } = require('../src/utils/enums');
 
 function buildApp() {
@@ -36,7 +36,7 @@ async function createTestUser({ role = ROLES.REGULAR_USER, username } = {}) {
     },
   });
 
-  const token = signToken({ sub: user.id, role: user.role });
+  const { token } = await createSession(user, { ipAddress: '127.0.0.1', userAgent: 'jest' });
   return { user, token, password, securityAnswers };
 }
 

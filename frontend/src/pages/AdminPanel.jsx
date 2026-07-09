@@ -3,12 +3,14 @@ import UsersTab from './admin/UsersTab';
 import ImportExportTab from './admin/ImportExportTab';
 import AuditLogsTab from './admin/AuditLogsTab';
 import StatsTab from './admin/StatsTab';
+import SettingsTab from './admin/SettingsTab';
 
 const TABS = [
   { key: 'stats', label: 'Dashboard', Component: StatsTab },
   { key: 'users', label: 'Users', Component: UsersTab },
   { key: 'import-export', label: 'Import / Export', Component: ImportExportTab },
   { key: 'audit', label: 'Audit Logs', Component: AuditLogsTab },
+  { key: 'settings', label: 'Settings', Component: SettingsTab },
 ];
 
 export default function AdminPanel() {

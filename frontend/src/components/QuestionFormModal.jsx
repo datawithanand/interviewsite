@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import Modal from './Modal';
 import { api } from '../api/client';
@@ -40,36 +40,52 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
     setError('');
   }, [question, moduleId, modules, open]);
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
-    try {
-      const payload = {
-        title: form.title,
-        content: form.content,
-        format: form.format,
-        codeLanguage: form.format === 'TEXT' ? null : form.codeLanguage,
-        answer: form.answer,
-        difficulty: form.difficulty,
-        tags: form.tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-      };
-      if (question) {
-        await api.patch(`/questions/${question.id}`, payload);
-      } else {
-        await api.post('/questions', { ...payload, moduleId: form.moduleId });
+  const submit = useCallback(
+    async (e) => {
+      e?.preventDefault?.();
+      setError('');
+      setSaving(true);
+      try {
+        const payload = {
+          title: form.title,
+          content: form.content,
+          format: form.format,
+          codeLanguage: form.format === 'TEXT' ? null : form.codeLanguage,
+          answer: form.answer,
+          difficulty: form.difficulty,
+          tags: form.tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+        };
+        if (question) {
+          await api.patch(`/questions/${question.id}`, payload);
+        } else {
+          await api.post('/questions', { ...payload, moduleId: form.moduleId });
+        }
+        onSaved();
+        onClose();
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setSaving(false);
       }
-      onSaved();
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+    },
+    [form, question, onSaved, onClose]
+  );
+
+  // Ctrl/Cmd+S saves the form instead of triggering the browser's save dialog.
+  useEffect(() => {
+    if (!open) return undefined;
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        submit();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, submit]);
 
   const showEditor = form.format !== 'TEXT';
 

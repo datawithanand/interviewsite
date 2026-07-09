@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import { api } from '../api/client';
 import { DIFFICULTY_COLOR } from '../constants';
+import CommentThread from './CommentThread';
 
 export default function QuestionDetailModal({ open, onClose, questionId }) {
   const [question, setQuestion] = useState(null);
@@ -91,6 +92,10 @@ export default function QuestionDetailModal({ open, onClose, questionId }) {
                 ))}
               </ul>
             )}
+          </div>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <CommentThread questionId={question.id} />
           </div>
         </div>
       )}

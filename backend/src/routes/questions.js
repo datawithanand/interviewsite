@@ -5,7 +5,8 @@ const { authenticate } = require('../middleware/auth');
 const { requireWriterOrAdmin } = require('../middleware/rbac');
 const { validate, questionCreateSchema, questionUpdateSchema } = require('../utils/validation');
 const { recordAudit } = require('../utils/audit');
-const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, ROLES } = require('../utils/enums');
+const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, ROLES, NOTIFICATION_TYPES } = require('../utils/enums');
+const { notify } = require('../utils/notify');
 
 const router = express.Router();
 
@@ -248,6 +249,17 @@ router.patch('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) 
       ipAddress: req.ip,
     });
 
+    if (existing.createdById) {
+      await notify({
+        userId: existing.createdById,
+        actorId: req.user.id,
+        type: NOTIFICATION_TYPES.QUESTION_EDITED,
+        message: `${req.user.username} edited your question "${existing.title}".`,
+        relatedQuestionId: existing.id,
+        relatedModuleId: existing.moduleId,
+      });
+    }
+
     res.json({ question: serializeQuestion(updated) });
   } catch (err) {
     next(err);
@@ -273,6 +285,16 @@ router.delete('/:id', authenticate, requireWriterOrAdmin, async (req, res, next)
       details: { title: existing.title, moduleId: existing.moduleId, serialNumber: existing.serialNumber },
       ipAddress: req.ip,
     });
+
+    if (existing.createdById) {
+      await notify({
+        userId: existing.createdById,
+        actorId: req.user.id,
+        type: NOTIFICATION_TYPES.QUESTION_DELETED,
+        message: `${req.user.username} deleted your question "${existing.title}".`,
+        relatedModuleId: existing.moduleId,
+      });
+    }
 
     res.status(204).send();
   } catch (err) {

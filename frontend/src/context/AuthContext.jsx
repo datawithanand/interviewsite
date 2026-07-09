@@ -7,14 +7,26 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const logout = useCallback(() => {
+  // Local-only clear — used as the 401 handler so an already-invalid token
+  // never triggers another doomed API call.
+  const clearLocalSession = useCallback(() => {
     setAuthToken(null);
     setUser(null);
   }, []);
 
+  // User-initiated sign out — best-effort revoke on the server, then clear locally.
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout', {});
+    } catch {
+      // token may already be invalid/expired — clearing locally is enough
+    }
+    clearLocalSession();
+  }, [clearLocalSession]);
+
   useEffect(() => {
-    setUnauthorizedHandler(logout);
-  }, [logout]);
+    setUnauthorizedHandler(clearLocalSession);
+  }, [clearLocalSession]);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -26,7 +38,7 @@ export function AuthProvider({ children }) {
     api
       .get('/auth/me')
       .then((res) => setUser(res.user))
-      .catch(() => setAuthToken(null))
+      .catch(() => clearLocalSession())
       .finally(() => setLoading(false));
   }, []);
 
