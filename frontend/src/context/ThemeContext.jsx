@@ -1,20 +1,17 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext(null);
 
+// The app now uses a single "Ocean Slate" theme everywhere (auth pages and
+// the authenticated app share the same gradient background), so there is
+// no light/dark toggle anymore — the `dark` Tailwind variant classes
+// already used throughout the app are simply always active.
 export function ThemeProvider({ children }) {
-  const [dark, setDark] = useState(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored) return stored === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
-
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
-  }, [dark]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
-  return <ThemeContext.Provider value={{ dark, toggle: () => setDark((d) => !d) }}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={{ dark: true }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

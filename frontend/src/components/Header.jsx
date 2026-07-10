@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { api } from '../api/client';
 import NotificationBell from './NotificationBell';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
-  const { dark, toggle } = useTheme();
   const location = useLocation();
   const [gameStats, setGameStats] = useState(null);
 
@@ -35,13 +33,6 @@ export default function Header({ onMenuClick }) {
           <span>Lvl {gameStats.level}</span>
         </Link>
       )}
-      <button
-        onClick={toggle}
-        title="Toggle dark mode"
-        className="w-8 h-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center text-sm"
-      >
-        {dark ? '☀️' : '🌙'}
-      </button>
       <NotificationBell />
       {isContentManagerOrAdmin(user) && (
         <Link to="/admin" className="text-sm text-brand-600 hover:underline hidden sm:inline">
