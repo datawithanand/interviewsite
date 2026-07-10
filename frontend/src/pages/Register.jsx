@@ -56,7 +56,7 @@ export default function Register() {
   const labelClass = 'block text-sm font-medium mb-1 text-white/90';
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 px-4 py-10">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#123249] to-[#0ea5e9] px-4 py-10">
       <AuthBackground />
 
       <div className="relative w-full max-w-lg">
@@ -105,6 +105,7 @@ export default function Register() {
                   autoComplete="new-password"
                   required
                   className={`${inputClass} pr-10`}
+                  iconClassName="text-white/70 hover:text-white"
                 />
                 <p className="text-xs text-white/50 mt-1">Min 8 characters, at least one letter and one number.</p>
               </div>
@@ -116,6 +117,7 @@ export default function Register() {
                   autoComplete="new-password"
                   required
                   className={`${inputClass} pr-10`}
+                  iconClassName="text-white/70 hover:text-white"
                 />
               </div>
             </div>

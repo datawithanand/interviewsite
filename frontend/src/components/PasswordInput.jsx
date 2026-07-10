@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function PasswordInput({ value, onChange, placeholder, autoComplete, required, className }) {
+export default function PasswordInput({ value, onChange, placeholder, autoComplete, required, className, iconClassName }) {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -19,7 +19,7 @@ export default function PasswordInput({ value, onChange, placeholder, autoComple
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
         aria-label={visible ? 'Hide password' : 'Show password'}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+        className={`absolute right-2.5 top-1/2 -translate-y-1/2 transition-colors ${iconClassName || 'text-gray-500 hover:text-gray-700'}`}
       >
         {visible ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

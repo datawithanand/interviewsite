@@ -36,7 +36,7 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 px-4">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#123249] to-[#0ea5e9] px-4">
       <AuthBackground />
 
       <div className="relative w-full max-w-sm">
@@ -69,6 +69,7 @@ export default function Login() {
                 autoComplete="current-password"
                 required
                 className="w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/40 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-white/60"
+                iconClassName="text-white/70 hover:text-white"
               />
             </div>
             {error && <p className="text-sm text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{error}</p>}

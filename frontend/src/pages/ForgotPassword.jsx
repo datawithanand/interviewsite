@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import PasswordInput from '../components/PasswordInput';
+import AuthBackground from '../components/AuthBackground';
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -39,59 +40,82 @@ export default function ForgotPassword() {
     }
   };
 
+  const inputClass =
+    'w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/40 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/60';
+  const labelClass = 'block text-sm font-medium mb-1 text-white/90';
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-        <h1 className="text-xl font-semibold mb-1">Reset your password</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Answer your security question to continue.</p>
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0b1220] via-[#123249] to-[#0ea5e9] px-4">
+      <AuthBackground />
 
-        {step === 1 && (
-          <form onSubmit={startReset} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Username</label>
-              <input
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-lg py-2 text-sm font-medium">
-              Continue
-            </button>
-          </form>
-        )}
+      <div className="relative w-full max-w-sm">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-3xl mb-3">
+            🧠
+          </div>
+          <h1 className="text-2xl font-semibold text-white">TechPrep Hub</h1>
+        </div>
 
-        {step === 2 && (
-          <form onSubmit={verifyAndReset} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">{question}</label>
-              <input
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">New Password</label>
-              <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" required />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {success && <p className="text-sm text-green-600">{success}</p>}
-            <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white rounded-lg py-2 text-sm font-medium">
-              Reset password
-            </button>
-          </form>
-        )}
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-8">
+          <h2 className="text-lg font-semibold text-white mb-1">Reset your password</h2>
+          <p className="text-sm text-white/70 mb-6">Answer your security question to continue.</p>
 
-        <p className="text-sm mt-4">
-          <Link to="/login" className="text-brand-600 hover:underline">
-            Back to sign in
-          </Link>
-        </p>
+          {step === 1 && (
+            <form onSubmit={startReset} className="space-y-4">
+              <div>
+                <label className={labelClass}>Username</label>
+                <input
+                  className={inputClass}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                />
+              </div>
+              {error && <p className="text-sm text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+              <button
+                type="submit"
+                className="w-full bg-white text-brand-700 hover:bg-white/90 rounded-lg py-2 text-sm font-semibold transition-all"
+              >
+                Continue
+              </button>
+            </form>
+          )}
+
+          {step === 2 && (
+            <form onSubmit={verifyAndReset} className="space-y-4">
+              <div>
+                <label className={labelClass}>{question}</label>
+                <input className={inputClass} value={answer} onChange={(e) => setAnswer(e.target.value)} required />
+              </div>
+              <div>
+                <label className={labelClass}>New Password</label>
+                <PasswordInput
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                  className={`${inputClass} pr-10`}
+                  iconClassName="text-white/70 hover:text-white"
+                />
+              </div>
+              {error && <p className="text-sm text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+              {success && <p className="text-sm text-emerald-200 bg-emerald-500/20 rounded-lg px-3 py-2">{success}</p>}
+              <button
+                type="submit"
+                className="w-full bg-white text-brand-700 hover:bg-white/90 rounded-lg py-2 text-sm font-semibold transition-all"
+              >
+                Reset password
+              </button>
+            </form>
+          )}
+
+          <p className="text-sm mt-4 text-white/80">
+            <Link to="/login" className="text-white hover:underline font-medium">
+              Back to sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
