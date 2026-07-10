@@ -16,9 +16,6 @@ const {
 
 const router = express.Router();
 
-const SECURITY_QUESTIONS_TO_PRESENT = 3;
-const SECURITY_QUESTIONS_REQUIRED_CORRECT = 2;
-
 function toPublicUser(user) {
   return {
     id: user.id,
@@ -50,13 +47,19 @@ router.post('/register', async (req, res, next) => {
     const existing = await prisma.user.findUnique({ where: { username: data.username } });
     if (existing) return res.status(409).json({ error: 'Username is already taken.' });
 
+    let securityQuestionText;
+    if (data.securityQuestion.templateId) {
+      const template = await prisma.securityQuestionTemplate.findUnique({ where: { id: data.securityQuestion.templateId } });
+      if (!template || !template.isActive) {
+        return res.status(400).json({ error: 'Selected security question is no longer available.' });
+      }
+      securityQuestionText = template.question;
+    } else {
+      securityQuestionText = data.securityQuestion.customQuestion;
+    }
+
     const passwordHash = await hashPassword(data.password);
-    const securityQuestionsData = await Promise.all(
-      data.securityQuestions.map(async (sq) => ({
-        question: sq.question,
-        answerHash: await hashPassword(sq.answer.trim().toLowerCase()),
-      }))
-    );
+    const securityAnswerHash = await hashPassword(data.securityQuestion.answer.trim().toLowerCase());
 
     const role = userCount === 0 ? ROLES.ADMIN : ROLES.REGULAR_USER;
 
@@ -66,7 +69,8 @@ router.post('/register', async (req, res, next) => {
         email: data.email || null,
         passwordHash,
         role,
-        securityQuestions: { create: securityQuestionsData },
+        securityQuestion: securityQuestionText,
+        securityAnswerHash,
       },
     });
 
@@ -231,31 +235,29 @@ router.post('/sessions/revoke-all', authenticate, async (req, res, next) => {
   }
 });
 
-// Step 1: given a username, return a random subset of that user's security
-// questions (ids + question text only — never answers) to present.
+// Step 1: given a username, confirm the account exists and return its single
+// security question (never the answer). Per explicit product requirement,
+// a nonexistent username gets a distinct 404 "User not found" rather than a
+// generic response — this is a conscious username-enumeration trade-off.
 router.post('/forgot-password/start', async (req, res, next) => {
   try {
     const data = validate(forgotPasswordStartSchema, req.body);
-    const user = await prisma.user.findUnique({
-      where: { username: data.username },
-      include: { securityQuestions: true },
-    });
+    const user = await prisma.user.findUnique({ where: { username: data.username } });
 
-    // Always respond with a (possibly empty) question set — never reveal
-    // whether the username exists.
-    if (!user || user.securityQuestions.length === 0) {
-      return res.json({ questions: [] });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    if (!user.securityQuestion) {
+      return res.status(400).json({ error: 'This account has no security question configured. Contact an administrator.' });
     }
 
-    const shuffled = [...user.securityQuestions].sort(() => Math.random() - 0.5);
-    const chosen = shuffled.slice(0, Math.min(SECURITY_QUESTIONS_TO_PRESENT, shuffled.length));
-    res.json({ questions: chosen.map((q) => ({ id: q.id, question: q.question })) });
+    res.json({ question: user.securityQuestion });
   } catch (err) {
     next(err);
   }
 });
 
-// Step 2: verify answers to the presented questions and set a new password.
+// Step 2: verify the answer to the account's security question and set a new password.
 router.post('/forgot-password/verify', async (req, res, next) => {
   try {
     const settings = await getSettings();
@@ -264,34 +266,24 @@ router.post('/forgot-password/verify', async (req, res, next) => {
     const strengthError = validatePasswordStrength(data.newPassword, settings);
     if (strengthError) return res.status(400).json({ error: strengthError });
 
-    const user = await prisma.user.findUnique({
-      where: { username: data.username },
-      include: { securityQuestions: true },
-    });
-
-    if (!user) return res.status(400).json({ error: 'Unable to verify security questions.' });
-
-    const byId = new Map(user.securityQuestions.map((q) => [q.id, q]));
-    let correctCount = 0;
-    for (const submitted of data.answers) {
-      const record = byId.get(submitted.id);
-      if (!record) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const match = await verifyPassword(submitted.answer.trim().toLowerCase(), record.answerHash);
-      if (match) correctCount += 1;
+    const user = await prisma.user.findUnique({ where: { username: data.username } });
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    if (!user.securityAnswerHash) {
+      return res.status(400).json({ error: 'This account has no security question configured. Contact an administrator.' });
     }
 
-    if (correctCount < SECURITY_QUESTIONS_REQUIRED_CORRECT) {
+    const match = await verifyPassword(data.answer.trim().toLowerCase(), user.securityAnswerHash);
+    if (!match) {
       await recordAudit({
         userId: user.id,
         action: AUDIT_ACTIONS.PASSWORD_RESET,
         targetType: AUDIT_TARGET_TYPES.PASSWORD_RESET,
         targetId: user.id,
-        details: { correctCount, required: SECURITY_QUESTIONS_REQUIRED_CORRECT },
+        details: { reason: 'wrong_answer' },
         ipAddress: req.ip,
         status: 'failure',
       });
-      return res.status(401).json({ error: 'Security question answers did not match.' });
+      return res.status(401).json({ error: 'Security question answer did not match.' });
     }
 
     const passwordHash = await hashPassword(data.newPassword);
@@ -309,7 +301,7 @@ router.post('/forgot-password/verify', async (req, res, next) => {
       action: AUDIT_ACTIONS.PASSWORD_RESET,
       targetType: AUDIT_TARGET_TYPES.PASSWORD_RESET,
       targetId: user.id,
-      details: { method: 'security_questions' },
+      details: { method: 'security_question' },
       ipAddress: req.ip,
     });
 

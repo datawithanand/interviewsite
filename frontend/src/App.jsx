@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { useAuth, isAdmin } from './context/AuthContext';
+import { useAuth, isContentManagerOrAdmin } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -15,9 +15,9 @@ function RequireAuth({ children }) {
   return children;
 }
 
-function RequireAdmin({ children }) {
+function RequireAdminPanelAccess({ children }) {
   const { user } = useAuth();
-  if (!isAdmin(user)) return <Navigate to="/" replace />;
+  if (!isContentManagerOrAdmin(user)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -36,14 +36,14 @@ export default function App() {
         }
       >
         <Route index element={<QuestionsView />} />
-        <Route path="modules/:moduleId" element={<QuestionsView />} />
+        <Route path="nodes/:nodeId" element={<QuestionsView />} />
         <Route path="profile" element={<Profile />} />
         <Route
           path="admin"
           element={
-            <RequireAdmin>
+            <RequireAdminPanelAccess>
               <AdminPanel />
-            </RequireAdmin>
+            </RequireAdminPanelAccess>
           }
         />
       </Route>

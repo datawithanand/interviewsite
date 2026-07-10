@@ -2,29 +2,40 @@ const express = require('express');
 const { z } = require('zod');
 const prisma = require('../db');
 const { authenticate } = require('../middleware/auth');
-const { requireWriterOrAdmin } = require('../middleware/rbac');
-const { validate, questionCreateSchema, questionUpdateSchema } = require('../utils/validation');
+const { requireContentManagerOrAdmin } = require('../middleware/rbac');
+const { validate, questionCreateSchema, questionUpdateSchema, hasRequiredFieldsForFormat } = require('../utils/validation');
 const { recordAudit } = require('../utils/audit');
 const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, ROLES, NOTIFICATION_TYPES } = require('../utils/enums');
 const { notify } = require('../utils/notify');
+const { hasActiveChildren } = require('../utils/nodeHelpers');
 
 const router = express.Router();
 
-function canModify(user, question) {
-  return user.role === ROLES.ADMIN || user.role === ROLES.WRITER;
+function canModify(user) {
+  return user.role === ROLES.ADMIN || user.role === ROLES.CONTENT_MANAGER;
+}
+
+const VERSIONED_FIELDS = ['title', 'questionText', 'questionCode', 'answerText', 'answerCode', 'format', 'codeLanguage', 'difficulty', 'tags'];
+
+function snapshotOf(question) {
+  const snap = {};
+  for (const key of VERSIONED_FIELDS) snap[key] = question[key];
+  return snap;
 }
 
 function serializeQuestion(q, favoritedByMe = false) {
   return {
     id: q.id,
-    moduleId: q.moduleId,
-    module: q.module ? { id: q.module.id, name: q.module.name } : undefined,
+    nodeId: q.nodeId,
+    node: q.node ? { id: q.node.id, name: q.node.name } : undefined,
     serialNumber: q.serialNumber,
     title: q.title,
-    content: q.content,
+    questionText: q.questionText,
+    questionCode: q.questionCode,
+    answerText: q.answerText,
+    answerCode: q.answerCode,
     format: q.format,
     codeLanguage: q.codeLanguage,
-    answer: q.answer,
     difficulty: q.difficulty,
     tags: JSON.parse(q.tags || '[]'),
     createdById: q.createdById,
@@ -37,55 +48,66 @@ function serializeQuestion(q, favoritedByMe = false) {
   };
 }
 
-// Allocates the next serial number for a module and creates the question in
-// one transaction so concurrent creates never collide on (moduleId, serialNumber).
-async function createQuestionWithSerial(tx, moduleId, data, userId, explicitSerial) {
-  const module = await tx.module.findUnique({ where: { id: moduleId } });
-  if (!module || module.isArchived) {
-    const err = new Error('Module not found.');
+// Allocates the next serial number for a node and creates the question in
+// one transaction so concurrent creates never collide on (nodeId, serialNumber).
+// Questions may only attach to leaf nodes (nodes with no active children).
+async function createQuestionWithSerial(tx, nodeId, data, userId, explicitSerial) {
+  const node = await tx.node.findUnique({ where: { id: nodeId } });
+  if (!node || node.isArchived) {
+    const err = new Error('Node not found.');
     err.statusCode = 404;
+    throw err;
+  }
+
+  const childCount = await tx.node.count({ where: { parentId: nodeId, isArchived: false } });
+  if (childCount > 0) {
+    const err = new Error('Questions can only be attached to a leaf node (one with no submodules).');
+    err.statusCode = 400;
     throw err;
   }
 
   let serialNumber = explicitSerial;
   if (serialNumber) {
     const clash = await tx.question.findUnique({
-      where: { moduleId_serialNumber: { moduleId, serialNumber } },
+      where: { nodeId_serialNumber: { nodeId, serialNumber } },
     });
     if (clash) {
-      const err = new Error(`Serial number ${serialNumber} already exists in this module.`);
+      const err = new Error(`Serial number ${serialNumber} already exists for this node.`);
       err.statusCode = 409;
       throw err;
     }
-    if (serialNumber >= module.nextSerial) {
-      await tx.module.update({ where: { id: moduleId }, data: { nextSerial: serialNumber + 1 } });
+    if (serialNumber >= node.nextSerial) {
+      await tx.node.update({ where: { id: nodeId }, data: { nextSerial: serialNumber + 1 } });
     }
   } else {
-    serialNumber = module.nextSerial;
-    await tx.module.update({ where: { id: moduleId }, data: { nextSerial: serialNumber + 1 } });
+    serialNumber = node.nextSerial;
+    await tx.node.update({ where: { id: nodeId }, data: { nextSerial: serialNumber + 1 } });
   }
 
+  const format = data.format === 'TEXT' ? 'TEXT' : data.format;
   return tx.question.create({
     data: {
-      moduleId,
+      nodeId,
       serialNumber,
       title: data.title,
-      content: data.content,
-      format: data.format,
-      codeLanguage: data.format === 'TEXT' ? null : data.codeLanguage,
-      answer: data.answer,
+      questionText: format === 'CODE' ? null : data.questionText || null,
+      questionCode: format === 'TEXT' ? null : data.questionCode || null,
+      answerText: format === 'CODE' ? null : data.answerText || null,
+      answerCode: format === 'TEXT' ? null : data.answerCode || null,
+      format,
+      codeLanguage: format === 'TEXT' ? null : data.codeLanguage,
       difficulty: data.difficulty,
       tags: JSON.stringify(data.tags || []),
       createdById: userId,
     },
-    include: { module: { select: { id: true, name: true } }, createdBy: { select: { username: true } } },
+    include: { node: { select: { id: true, name: true } }, createdBy: { select: { username: true } } },
   });
 }
 
 router.get('/', authenticate, async (req, res, next) => {
   try {
     const querySchema = z.object({
-      moduleId: z.string().optional(),
+      nodeId: z.string().optional(),
       difficulty: z.string().optional(),
       format: z.string().optional(),
       tag: z.string().optional(),
@@ -98,8 +120,8 @@ router.get('/', authenticate, async (req, res, next) => {
     });
     const q = validate(querySchema, req.query);
 
-    const where = {};
-    if (q.moduleId) where.moduleId = q.moduleId;
+    const where = { node: { isArchived: false } };
+    if (q.nodeId) where.nodeId = q.nodeId;
     if (q.difficulty) where.difficulty = q.difficulty;
     if (q.format) where.format = q.format;
     if (q.createdBy) where.createdById = q.createdBy;
@@ -107,8 +129,10 @@ router.get('/', authenticate, async (req, res, next) => {
     if (q.q) {
       where.OR = [
         { title: { contains: q.q } },
-        { content: { contains: q.q } },
-        { answer: { contains: q.q } },
+        { questionText: { contains: q.q } },
+        { questionCode: { contains: q.q } },
+        { answerText: { contains: q.q } },
+        { answerCode: { contains: q.q } },
       ];
     }
     if (q.favoritesOnly === 'true') {
@@ -130,7 +154,7 @@ router.get('/', authenticate, async (req, res, next) => {
         skip: (q.page - 1) * q.pageSize,
         take: q.pageSize,
         include: {
-          module: { select: { id: true, name: true } },
+          node: { select: { id: true, name: true } },
           createdBy: { select: { username: true } },
           _count: { select: { favorites: true } },
         },
@@ -157,7 +181,7 @@ router.get('/:id', authenticate, async (req, res, next) => {
       where: { id: req.params.id },
       data: { viewCount: { increment: 1 } },
       include: {
-        module: { select: { id: true, name: true } },
+        node: { select: { id: true, name: true } },
         createdBy: { select: { username: true } },
         _count: { select: { favorites: true } },
       },
@@ -175,12 +199,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
   }
 });
 
-router.post('/', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.post('/', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const data = validate(questionCreateSchema, req.body);
 
     const question = await prisma.$transaction((tx) =>
-      createQuestionWithSerial(tx, data.moduleId, data, req.user.id, data.serialNumber)
+      createQuestionWithSerial(tx, data.nodeId, data, req.user.id, data.serialNumber)
     );
 
     await recordAudit({
@@ -188,7 +212,7 @@ router.post('/', authenticate, requireWriterOrAdmin, async (req, res, next) => {
       action: AUDIT_ACTIONS.CREATE,
       targetType: AUDIT_TARGET_TYPES.QUESTION,
       targetId: question.id,
-      details: { title: question.title, moduleId: question.moduleId, serialNumber: question.serialNumber },
+      details: { title: question.title, nodeId: question.nodeId, serialNumber: question.serialNumber },
       ipAddress: req.ip,
     });
 
@@ -198,37 +222,50 @@ router.post('/', authenticate, requireWriterOrAdmin, async (req, res, next) => {
   }
 });
 
-router.patch('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.patch('/:id', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const data = validate(questionUpdateSchema, req.body);
     const existing = await prisma.question.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Question not found.' });
 
-    if (!canModify(req.user, existing)) {
+    if (!canModify(req.user)) {
       return res.status(403).json({ error: 'You do not have permission to edit this question.' });
+    }
+
+    const { changeDescription, ...fields } = data;
+
+    // Merge onto the existing row to validate the *resulting* question
+    // satisfies its (possibly newly-selected) format's field requirements.
+    const merged = { ...existing, ...fields };
+    if (!hasRequiredFieldsForFormat(merged)) {
+      return res.status(400).json({ error: 'Provide the Text/Code fields required for the selected format (both Question and Answer).' });
+    }
+    if (merged.format !== 'TEXT' && !merged.codeLanguage) {
+      return res.status(400).json({ error: 'codeLanguage is required when format is CODE or BOTH.' });
     }
 
     const versionCount = await prisma.questionVersion.count({ where: { questionId: existing.id } });
 
-    const { changeDescription, ...fields } = data;
     const updateData = { ...fields };
     if (fields.tags) updateData.tags = JSON.stringify(fields.tags);
-    if (fields.format === 'TEXT') updateData.codeLanguage = null;
+    // Only keep the fields relevant to the (possibly newly-selected) format —
+    // a leftover questionText from a prior TEXT format shouldn't linger once
+    // the question has switched to CODE-only, and vice versa.
+    if (merged.format === 'TEXT') {
+      updateData.questionCode = null;
+      updateData.answerCode = null;
+      updateData.codeLanguage = null;
+    } else if (merged.format === 'CODE') {
+      updateData.questionText = null;
+      updateData.answerText = null;
+    }
 
     const [, updated] = await prisma.$transaction([
       prisma.questionVersion.create({
         data: {
           questionId: existing.id,
           versionNumber: versionCount + 1,
-          previousContent: JSON.stringify({
-            title: existing.title,
-            content: existing.content,
-            format: existing.format,
-            codeLanguage: existing.codeLanguage,
-            answer: existing.answer,
-            difficulty: existing.difficulty,
-            tags: existing.tags,
-          }),
+          previousContent: JSON.stringify(snapshotOf(existing)),
           changedById: req.user.id,
           changeDescription: changeDescription || null,
         },
@@ -236,7 +273,7 @@ router.patch('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) 
       prisma.question.update({
         where: { id: existing.id },
         data: updateData,
-        include: { module: { select: { id: true, name: true } }, createdBy: { select: { username: true } } },
+        include: { node: { select: { id: true, name: true } }, createdBy: { select: { username: true } } },
       }),
     ]);
 
@@ -256,7 +293,7 @@ router.patch('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) 
         type: NOTIFICATION_TYPES.QUESTION_EDITED,
         message: `${req.user.username} edited your question "${existing.title}".`,
         relatedQuestionId: existing.id,
-        relatedModuleId: existing.moduleId,
+        relatedNodeId: existing.nodeId,
       });
     }
 
@@ -266,12 +303,12 @@ router.patch('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) 
   }
 });
 
-router.delete('/:id', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.delete('/:id', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const existing = await prisma.question.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Question not found.' });
 
-    if (!canModify(req.user, existing)) {
+    if (!canModify(req.user)) {
       return res.status(403).json({ error: 'You do not have permission to delete this question.' });
     }
 
@@ -282,7 +319,7 @@ router.delete('/:id', authenticate, requireWriterOrAdmin, async (req, res, next)
       action: AUDIT_ACTIONS.DELETE,
       targetType: AUDIT_TARGET_TYPES.QUESTION,
       targetId: existing.id,
-      details: { title: existing.title, moduleId: existing.moduleId, serialNumber: existing.serialNumber },
+      details: { title: existing.title, nodeId: existing.nodeId, serialNumber: existing.serialNumber },
       ipAddress: req.ip,
     });
 
@@ -292,7 +329,7 @@ router.delete('/:id', authenticate, requireWriterOrAdmin, async (req, res, next)
         actorId: req.user.id,
         type: NOTIFICATION_TYPES.QUESTION_DELETED,
         message: `${req.user.username} deleted your question "${existing.title}".`,
-        relatedModuleId: existing.moduleId,
+        relatedNodeId: existing.nodeId,
       });
     }
 
@@ -302,7 +339,7 @@ router.delete('/:id', authenticate, requireWriterOrAdmin, async (req, res, next)
   }
 });
 
-router.post('/:id/duplicate', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.post('/:id/duplicate', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const existing = await prisma.question.findUnique({ where: { id: req.params.id } });
     if (!existing) return res.status(404).json({ error: 'Question not found.' });
@@ -310,13 +347,15 @@ router.post('/:id/duplicate', authenticate, requireWriterOrAdmin, async (req, re
     const clone = await prisma.$transaction((tx) =>
       createQuestionWithSerial(
         tx,
-        existing.moduleId,
+        existing.nodeId,
         {
           title: `${existing.title} (Copy)`,
-          content: existing.content,
+          questionText: existing.questionText,
+          questionCode: existing.questionCode,
+          answerText: existing.answerText,
+          answerCode: existing.answerCode,
           format: existing.format,
           codeLanguage: existing.codeLanguage,
-          answer: existing.answer,
           difficulty: existing.difficulty,
           tags: JSON.parse(existing.tags || '[]'),
         },
@@ -362,7 +401,7 @@ router.get('/:id/versions', authenticate, async (req, res, next) => {
   }
 });
 
-router.post('/:id/versions/:versionId/rollback', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.post('/:id/versions/:versionId/rollback', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const version = await prisma.questionVersion.findUnique({ where: { id: req.params.versionId } });
     if (!version || version.questionId !== req.params.id) {
@@ -379,15 +418,7 @@ router.post('/:id/versions/:versionId/rollback', authenticate, requireWriterOrAd
         data: {
           questionId: existing.id,
           versionNumber: versionCount + 1,
-          previousContent: JSON.stringify({
-            title: existing.title,
-            content: existing.content,
-            format: existing.format,
-            codeLanguage: existing.codeLanguage,
-            answer: existing.answer,
-            difficulty: existing.difficulty,
-            tags: existing.tags,
-          }),
+          previousContent: JSON.stringify(snapshotOf(existing)),
           changedById: req.user.id,
           changeDescription: `Rollback to version ${version.versionNumber}`,
         },
@@ -427,13 +458,13 @@ router.delete('/:id/favorite', authenticate, async (req, res, next) => {
 
 const bulkActionSchema = z.object({
   questionIds: z.array(z.string().min(1)).min(1).max(500),
-  action: z.enum(['delete', 'setDifficulty', 'addTag', 'moveModule']),
+  action: z.enum(['delete', 'setDifficulty', 'addTag', 'moveNode']),
   difficulty: z.string().optional(),
   tag: z.string().optional(),
-  moduleId: z.string().optional(),
+  nodeId: z.string().optional(),
 });
 
-router.post('/bulk', authenticate, requireWriterOrAdmin, async (req, res, next) => {
+router.post('/bulk', authenticate, requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const data = validate(bulkActionSchema, req.body);
 
@@ -471,18 +502,21 @@ router.post('/bulk', authenticate, requireWriterOrAdmin, async (req, res, next) 
       return res.json({ updated: questions.length });
     }
 
-    if (data.action === 'moveModule') {
-      if (!data.moduleId) return res.status(400).json({ error: 'moduleId is required.' });
-      const targetModule = await prisma.module.findUnique({ where: { id: data.moduleId } });
-      if (!targetModule || targetModule.isArchived) return res.status(404).json({ error: 'Target module not found.' });
+    if (data.action === 'moveNode') {
+      if (!data.nodeId) return res.status(400).json({ error: 'nodeId is required.' });
+      const targetNode = await prisma.node.findUnique({ where: { id: data.nodeId } });
+      if (!targetNode || targetNode.isArchived) return res.status(404).json({ error: 'Target node not found.' });
+      if (await hasActiveChildren(targetNode.id)) {
+        return res.status(400).json({ error: 'Target node is not a leaf (it has submodules); questions cannot attach here.' });
+      }
 
       const questions = await prisma.question.findMany({ where: { id: { in: data.questionIds } } });
       await prisma.$transaction(async (tx) => {
         for (const qn of questions) {
-          const mod = await tx.module.findUnique({ where: { id: targetModule.id } });
-          const serialNumber = mod.nextSerial;
-          await tx.module.update({ where: { id: targetModule.id }, data: { nextSerial: serialNumber + 1 } });
-          await tx.question.update({ where: { id: qn.id }, data: { moduleId: targetModule.id, serialNumber } });
+          const node = await tx.node.findUnique({ where: { id: targetNode.id } });
+          const serialNumber = node.nextSerial;
+          await tx.node.update({ where: { id: targetNode.id }, data: { nextSerial: serialNumber + 1 } });
+          await tx.question.update({ where: { id: qn.id }, data: { nodeId: targetNode.id, serialNumber } });
         }
       });
       return res.json({ updated: questions.length });

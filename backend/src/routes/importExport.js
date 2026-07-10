@@ -3,10 +3,12 @@ const multer = require('multer');
 const { z } = require('zod');
 const prisma = require('../db');
 const { authenticate } = require('../middleware/auth');
-const { requireWriterOrAdmin } = require('../middleware/rbac');
+const { requireContentManagerOrAdmin, requireAdmin } = require('../middleware/rbac');
 const { validate } = require('../utils/validation');
+const { verifyPassword } = require('../utils/password');
 const { recordAudit } = require('../utils/audit');
 const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, QUESTION_FORMATS, DIFFICULTIES } = require('../utils/enums');
+const { getDescendantIds, getNodePath, pathToString } = require('../utils/nodeHelpers');
 const fmt = require('../utils/importExportFormats');
 
 const router = express.Router();
@@ -22,30 +24,44 @@ const upload = multer({
   },
 });
 
-router.use(authenticate, requireWriterOrAdmin);
+router.use(authenticate);
 
-// ---------- Export ----------
+// ---------- Export (content: questions across the hierarchy) ----------
 
 const exportQuerySchema = z.object({
-  format: z.enum(['json', 'csv', 'xlsx', 'xml', 'pdf']),
-  moduleIds: z.string().optional(), // comma-separated module ids; omit for all modules
+  format: z.enum(['json', 'csv', 'xlsx', 'xml', 'pdf', 'md']),
+  nodeIds: z.string().optional(), // comma-separated node ids; every question under these subtrees is included
+  questionIds: z.string().optional(), // comma-separated question ids; exact selection, takes precedence over nodeIds
 });
 
-router.get('/export', async (req, res, next) => {
+router.get('/export', requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const q = validate(exportQuerySchema, req.query);
-    const moduleIds = q.moduleIds ? q.moduleIds.split(',').filter(Boolean) : undefined;
 
-    const modules = await prisma.module.findMany({
-      where: { isArchived: false, ...(moduleIds ? { id: { in: moduleIds } } : {}) },
-      include: { questions: { orderBy: { serialNumber: 'asc' } } },
-    });
+    let questions;
+    if (q.questionIds) {
+      const ids = q.questionIds.split(',').filter(Boolean);
+      questions = await prisma.question.findMany({ where: { id: { in: ids } }, orderBy: { serialNumber: 'asc' } });
+    } else if (q.nodeIds) {
+      const rootIds = q.nodeIds.split(',').filter(Boolean);
+      const allIds = new Set();
+      for (const id of rootIds) {
+        // eslint-disable-next-line no-await-in-loop
+        const descendants = await getDescendantIds(id);
+        descendants.forEach((d) => allIds.add(d));
+      }
+      questions = await prisma.question.findMany({ where: { nodeId: { in: [...allIds] } }, orderBy: { serialNumber: 'asc' } });
+    } else {
+      questions = await prisma.question.findMany({ where: { node: { isArchived: false } }, orderBy: { serialNumber: 'asc' } });
+    }
 
-    const questionsByModule = {};
-    let recordCount = 0;
-    for (const m of modules) {
-      questionsByModule[m.name] = m.questions;
-      recordCount += m.questions.length;
+    const questionsByPath = {};
+    for (const question of questions) {
+      // eslint-disable-next-line no-await-in-loop
+      const path = await getNodePath(question.nodeId);
+      const pathStr = pathToString(path) || 'Unknown';
+      if (!questionsByPath[pathStr]) questionsByPath[pathStr] = [];
+      questionsByPath[pathStr].push(question);
     }
 
     let buffer;
@@ -54,27 +70,32 @@ router.get('/export', async (req, res, next) => {
 
     switch (q.format) {
       case 'json':
-        buffer = fmt.toJson(questionsByModule);
+        buffer = fmt.toJson(questionsByPath);
         contentType = 'application/json';
         filename = 'questions-export.json';
         break;
       case 'csv':
-        buffer = fmt.toCsv(questionsByModule);
+        buffer = fmt.toCsv(questionsByPath);
         contentType = 'text/csv';
         filename = 'questions-export.csv';
         break;
       case 'xlsx':
-        buffer = await fmt.toXlsx(questionsByModule);
+        buffer = await fmt.toXlsx(questionsByPath);
         contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
         filename = 'questions-export.xlsx';
         break;
       case 'xml':
-        buffer = fmt.toXml(questionsByModule);
+        buffer = fmt.toXml(questionsByPath);
         contentType = 'application/xml';
         filename = 'questions-export.xml';
         break;
+      case 'md':
+        buffer = fmt.toMarkdown(questionsByPath);
+        contentType = 'text/markdown';
+        filename = 'questions-export.md';
+        break;
       case 'pdf':
-        buffer = await fmt.toPdf(questionsByModule);
+        buffer = await fmt.toPdf(questionsByPath);
         contentType = 'application/pdf';
         filename = 'questions-export.pdf';
         break;
@@ -88,8 +109,8 @@ router.get('/export', async (req, res, next) => {
         action: 'export',
         fileName: filename,
         fileFormat: q.format,
-        recordCount,
-        modulesIncluded: JSON.stringify(Object.keys(questionsByModule)),
+        recordCount: questions.length,
+        nodesIncluded: JSON.stringify(Object.keys(questionsByPath)),
         status: 'success',
       },
     });
@@ -98,13 +119,106 @@ router.get('/export', async (req, res, next) => {
       userId: req.user.id,
       action: AUDIT_ACTIONS.EXPORT,
       targetType: AUDIT_TARGET_TYPES.QUESTION,
-      details: { format: q.format, recordCount },
+      details: { format: q.format, recordCount: questions.length },
       ipAddress: req.ip,
     });
 
     res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ---------- Full database export (admin only, highly sensitive) ----------
+// Dumps every table as JSON, including password hashes and security-answer
+// hashes. Gated behind: admin role, re-entering your own password, and a
+// dedicated FULL_EXPORT audit entry every time it's used.
+
+const fullExportSchema = z.object({ password: z.string().min(1) });
+
+router.post('/export/full-database', requireAdmin, async (req, res, next) => {
+  try {
+    const data = validate(fullExportSchema, req.body);
+    const valid = await verifyPassword(data.password, req.user.passwordHash);
+    if (!valid) return res.status(401).json({ error: 'Password is incorrect.' });
+
+    const [
+      users,
+      nodes,
+      questions,
+      questionVersions,
+      favorites,
+      comments,
+      notifications,
+      savedSearches,
+      auditLogs,
+      importsExports,
+      sessions,
+      settings,
+      securityQuestionTemplates,
+    ] = await Promise.all([
+      prisma.user.findMany(),
+      prisma.node.findMany(),
+      prisma.question.findMany(),
+      prisma.questionVersion.findMany(),
+      prisma.favorite.findMany(),
+      prisma.comment.findMany(),
+      prisma.notification.findMany(),
+      prisma.savedSearch.findMany(),
+      prisma.auditLog.findMany(),
+      prisma.importExport.findMany(),
+      prisma.session.findMany(),
+      prisma.settings.findMany(),
+      prisma.securityQuestionTemplate.findMany(),
+    ]);
+
+    const dump = {
+      exportedAt: new Date().toISOString(),
+      exportedBy: req.user.username,
+      tables: {
+        users,
+        nodes,
+        questions,
+        questionVersions,
+        favorites,
+        comments,
+        notifications,
+        savedSearches,
+        auditLogs,
+        importsExports,
+        sessions,
+        settings,
+        securityQuestionTemplates,
+      },
+    };
+
+    const filename = `full-database-export-${Date.now()}.json`;
+
+    await prisma.importExport.create({
+      data: {
+        userId: req.user.id,
+        action: 'export',
+        fileName: filename,
+        fileFormat: 'json',
+        recordCount: users.length + questions.length,
+        nodesIncluded: JSON.stringify(['ALL']),
+        status: 'success',
+      },
+    });
+
+    await recordAudit({
+      userId: req.user.id,
+      action: AUDIT_ACTIONS.FULL_EXPORT,
+      targetType: AUDIT_TARGET_TYPES.DATABASE,
+      details: { userCount: users.length, questionCount: questions.length },
+      ipAddress: req.ip,
+    });
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(JSON.stringify(dump, null, 2));
   } catch (err) {
     next(err);
   }
@@ -131,19 +245,26 @@ function parseFile(file) {
 function validateRow(rawRow, index) {
   const row = fmt.normalizeRow(rawRow);
   const errors = [];
-  if (!row.module) errors.push('module is required');
+  if (!row.nodePath) errors.push('nodePath is required');
   if (!row.title) errors.push('title is required');
-  if (!row.content) errors.push('content is required');
-  if (!row.answer) errors.push('answer is required');
   if (!Object.values(QUESTION_FORMATS).includes(row.format)) errors.push(`invalid format "${row.format}"`);
   if (!Object.values(DIFFICULTIES).includes(row.difficulty)) errors.push(`invalid difficulty "${row.difficulty}"`);
+  if (row.format === 'TEXT' && (!row.questionText || !row.answerText)) {
+    errors.push('questionText and answerText are required for TEXT format');
+  }
+  if (row.format === 'CODE' && (!row.questionCode || !row.answerCode)) {
+    errors.push('questionCode and answerCode are required for CODE format');
+  }
+  if (row.format === 'BOTH' && (!row.questionText || !row.questionCode || !row.answerText || !row.answerCode)) {
+    errors.push('questionText, questionCode, answerText, and answerCode are all required for BOTH format');
+  }
   if ((row.format === 'CODE' || row.format === 'BOTH') && !row.codeLanguage) {
     errors.push('codeLanguage is required for CODE/BOTH format');
   }
   return { row, index, errors };
 }
 
-router.post('/import/preview', upload.array('files', 5), async (req, res, next) => {
+router.post('/import/preview', requireContentManagerOrAdmin, upload.array('files', 5), async (req, res, next) => {
   try {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No files uploaded.' });
 
@@ -162,22 +283,28 @@ router.post('/import/preview', upload.array('files', 5), async (req, res, next) 
     const validRows = validated.filter((v) => v.errors.length === 0);
     const invalidRows = validated.filter((v) => v.errors.length > 0);
 
-    // Detect conflicts against existing serial numbers per module.
-    const moduleNames = [...new Set(validRows.map((v) => v.row.module))];
-    const existingModules = await prisma.module.findMany({
-      where: { name: { in: moduleNames } },
-      include: { questions: { select: { serialNumber: true } } },
-    });
-    const existingSerialsByModule = new Map(
-      existingModules.map((m) => [m.name, new Set(m.questions.map((q) => q.serialNumber))])
-    );
-
+    // Detect conflicts against existing serial numbers per resolved leaf node.
+    const pathStrs = [...new Set(validRows.map((v) => v.row.nodePath))];
     const conflicts = [];
-    for (const v of validRows) {
-      if (!v.row.serialNumber) continue;
-      const set = existingSerialsByModule.get(v.row.module);
-      if (set && set.has(v.row.serialNumber)) {
-        conflicts.push({ index: v.index, module: v.row.module, serialNumber: v.row.serialNumber });
+    for (const pathStr of pathStrs) {
+      const segments = pathStr.split(fmt.PATH_SEPARATOR).map((s) => s.trim()).filter(Boolean);
+      // eslint-disable-next-line no-await-in-loop
+      let node = null;
+      let parentId = null;
+      for (const segment of segments) {
+        // eslint-disable-next-line no-await-in-loop
+        node = await prisma.node.findFirst({ where: { name: segment, parentId, isArchived: false } });
+        if (!node) break;
+        parentId = node.id;
+      }
+      if (!node) continue; // node doesn't exist yet — nothing to conflict with
+      // eslint-disable-next-line no-await-in-loop
+      const existingSerials = await prisma.question.findMany({ where: { nodeId: node.id }, select: { serialNumber: true } });
+      const serialSet = new Set(existingSerials.map((q) => q.serialNumber));
+      for (const v of validRows) {
+        if (v.row.nodePath === pathStr && v.row.serialNumber && serialSet.has(v.row.serialNumber)) {
+          conflicts.push({ index: v.index, nodePath: pathStr, serialNumber: v.row.serialNumber });
+        }
       }
     }
 
@@ -202,12 +329,14 @@ const commitSchema = z.object({
     .array(
       z.object({
         serialNumber: z.number().int().positive().optional(),
-        module: z.string().min(1),
+        nodePath: z.string().min(1),
         title: z.string().min(1),
-        content: z.string().min(1),
         format: z.enum(['TEXT', 'CODE', 'BOTH']),
         codeLanguage: z.string().nullable().optional(),
-        answer: z.string().min(1),
+        questionText: z.string().optional().default(''),
+        questionCode: z.string().optional().default(''),
+        answerText: z.string().optional().default(''),
+        answerCode: z.string().optional().default(''),
         difficulty: z.enum(['BEGINNER', 'INTERMEDIATE', 'ADVANCED']),
         tags: z.array(z.string()).optional().default([]),
       })
@@ -219,7 +348,7 @@ const commitSchema = z.object({
   fileFormat: z.string().optional().default('json'),
 });
 
-router.post('/import/commit', async (req, res, next) => {
+router.post('/import/commit', requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const data = validate(commitSchema, req.body);
     let imported = 0;
@@ -228,30 +357,53 @@ router.post('/import/commit', async (req, res, next) => {
     const errors = [];
 
     await prisma.$transaction(async (tx) => {
-      const moduleCache = new Map();
+      const nodeCache = new Map();
 
-      async function getOrCreateModule(name) {
-        if (moduleCache.has(name)) return moduleCache.get(name);
-        let mod = await tx.module.findUnique({ where: { name } });
-        if (!mod) {
-          mod = await tx.module.create({ data: { name, createdById: req.user.id } });
+      // Finds (or creates) the full chain of nodes for a "A > B > C" path,
+      // returning the leaf node. Intermediate segments become non-leaf
+      // parents; only the final segment ever gets a question attached.
+      async function getOrCreateNodeChain(pathStr) {
+        if (nodeCache.has(pathStr)) return nodeCache.get(pathStr);
+        const segments = pathStr.split(fmt.PATH_SEPARATOR).map((s) => s.trim()).filter(Boolean);
+        let parentId = null;
+        let node = null;
+        for (const segment of segments) {
+          // eslint-disable-next-line no-await-in-loop
+          node = await tx.node.findFirst({ where: { name: segment, parentId, isArchived: false } });
+          if (!node) {
+            // eslint-disable-next-line no-await-in-loop
+            node = await tx.node.create({ data: { name: segment, parentId, createdById: req.user.id } });
+          }
+          parentId = node.id;
         }
-        moduleCache.set(name, mod);
-        return mod;
+        nodeCache.set(pathStr, node);
+        return node;
       }
 
       for (const row of data.rows) {
         // eslint-disable-next-line no-await-in-loop
-        const mod = await getOrCreateModule(row.module);
+        const node = await getOrCreateNodeChain(row.nodePath);
 
         let serialNumber = row.serialNumber;
         let existing = null;
         if (serialNumber) {
           // eslint-disable-next-line no-await-in-loop
           existing = await tx.question.findUnique({
-            where: { moduleId_serialNumber: { moduleId: mod.id, serialNumber } },
+            where: { nodeId_serialNumber: { nodeId: node.id, serialNumber } },
           });
         }
+
+        const fieldData = {
+          title: row.title,
+          format: row.format,
+          codeLanguage: row.format === 'TEXT' ? null : row.codeLanguage,
+          questionText: row.questionText || null,
+          questionCode: row.format === 'TEXT' ? null : row.questionCode || null,
+          answerText: row.answerText || null,
+          answerCode: row.format === 'TEXT' ? null : row.answerCode || null,
+          difficulty: row.difficulty,
+          tags: JSON.stringify(row.tags || []),
+        };
 
         if (existing) {
           if (data.conflictResolution === 'skip') {
@@ -260,18 +412,7 @@ router.post('/import/commit', async (req, res, next) => {
           }
           if (data.conflictResolution === 'overwrite') {
             // eslint-disable-next-line no-await-in-loop
-            await tx.question.update({
-              where: { id: existing.id },
-              data: {
-                title: row.title,
-                content: row.content,
-                format: row.format,
-                codeLanguage: row.format === 'TEXT' ? null : row.codeLanguage,
-                answer: row.answer,
-                difficulty: row.difficulty,
-                tags: JSON.stringify(row.tags || []),
-              },
-            });
+            await tx.question.update({ where: { id: existing.id }, data: fieldData });
             overwritten += 1;
             continue;
           }
@@ -281,29 +422,18 @@ router.post('/import/commit', async (req, res, next) => {
         }
 
         if (!serialNumber) {
-          serialNumber = mod.nextSerial;
+          serialNumber = node.nextSerial;
         }
         // eslint-disable-next-line no-await-in-loop
-        await tx.module.update({
-          where: { id: mod.id },
-          data: { nextSerial: Math.max(mod.nextSerial, serialNumber + 1) },
+        await tx.node.update({
+          where: { id: node.id },
+          data: { nextSerial: Math.max(node.nextSerial, serialNumber + 1) },
         });
-        mod.nextSerial = Math.max(mod.nextSerial, serialNumber + 1);
+        node.nextSerial = Math.max(node.nextSerial, serialNumber + 1);
 
         // eslint-disable-next-line no-await-in-loop
         await tx.question.create({
-          data: {
-            moduleId: mod.id,
-            serialNumber,
-            title: row.title,
-            content: row.content,
-            format: row.format,
-            codeLanguage: row.format === 'TEXT' ? null : row.codeLanguage,
-            answer: row.answer,
-            difficulty: row.difficulty,
-            tags: JSON.stringify(row.tags || []),
-            createdById: req.user.id,
-          },
+          data: { nodeId: node.id, serialNumber, createdById: req.user.id, ...fieldData },
         });
         imported += 1;
       }
@@ -318,7 +448,7 @@ router.post('/import/commit', async (req, res, next) => {
         fileName: data.fileName,
         fileFormat: data.fileFormat,
         recordCount: imported,
-        modulesIncluded: JSON.stringify([...new Set(data.rows.map((r) => r.module))]),
+        nodesIncluded: JSON.stringify([...new Set(data.rows.map((r) => r.nodePath))]),
         status,
         errorDetails: errors.length ? JSON.stringify(errors) : null,
       },
@@ -338,7 +468,7 @@ router.post('/import/commit', async (req, res, next) => {
   }
 });
 
-router.get('/history', async (req, res, next) => {
+router.get('/history', requireContentManagerOrAdmin, async (req, res, next) => {
   try {
     const history = await prisma.importExport.findMany({
       where: { userId: req.user.id },

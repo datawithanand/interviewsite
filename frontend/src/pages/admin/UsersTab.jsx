@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import PasswordInput from '../../components/PasswordInput';
+
+const ROLE_LABELS = { REGULAR_USER: 'Regular User', CONTENT_MANAGER: 'Content Manager', ADMIN: 'Admin' };
 
 export default function UsersTab() {
   const [users, setUsers] = useState([]);
@@ -8,15 +11,18 @@ export default function UsersTab() {
   const [error, setError] = useState('');
   const [resetTarget, setResetTarget] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  const [loading, setLoading] = useState(true);
 
   const load = () => {
+    setLoading(true);
     const params = new URLSearchParams();
     if (q) params.set('q', q);
     if (role) params.set('role', role);
     api
       .get(`/users?${params.toString()}`)
       .then((res) => setUsers(res.users))
-      .catch((err) => setError(err.message));
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -71,66 +77,76 @@ export default function UsersTab() {
           onChange={(e) => setRole(e.target.value)}
         >
           <option value="">All roles</option>
-          <option value="REGULAR_USER">Regular User</option>
-          <option value="WRITER">Writer</option>
-          <option value="ADMIN">Admin</option>
+          {Object.entries(ROLE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </div>
 
       {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
+      {loading && <p className="text-sm text-gray-500">Loading…</p>}
+      {!loading && users.length === 0 && <p className="text-sm text-gray-500">No users match your filters.</p>}
 
-      <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-900/50 text-left text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-3 py-2">Username</th>
-              <th className="px-3 py-2">Role</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Created</th>
-              <th className="px-3 py-2">Last Login</th>
-              <th className="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-t border-gray-100 dark:border-gray-700">
-                <td className="px-3 py-2 font-medium">{u.username}</td>
-                <td className="px-3 py-2">
-                  <select
-                    value={u.role}
-                    onChange={(e) => changeRole(u.id, e.target.value)}
-                    className="rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-1.5 py-1 text-xs"
-                  >
-                    <option value="REGULAR_USER">Regular User</option>
-                    <option value="WRITER">Writer</option>
-                    <option value="ADMIN">Admin</option>
-                  </select>
-                </td>
-                <td className="px-3 py-2">
-                  <span className={u.isActive ? 'text-green-600' : 'text-gray-400'}>
-                    {u.isActive ? 'Active' : 'Deactivated'}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
-                <td className="px-3 py-2 text-xs text-gray-500">
-                  {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '—'}
-                </td>
-                <td className="px-3 py-2 space-x-2">
-                  <button onClick={() => setResetTarget(u)} className="text-xs text-brand-600 hover:underline">
-                    Reset PW
-                  </button>
-                  <button onClick={() => toggleActive(u)} className="text-xs text-red-600 hover:underline">
-                    {u.isActive ? 'Deactivate' : 'Reactivate'}
-                  </button>
-                  <button onClick={() => forceLogout(u)} className="text-xs text-gray-600 hover:underline">
-                    Force Logout
-                  </button>
-                </td>
+      {!loading && users.length > 0 && (
+        <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-900/50 text-left text-xs uppercase text-gray-500">
+              <tr>
+                <th className="px-3 py-2">Username</th>
+                <th className="px-3 py-2">Email</th>
+                <th className="px-3 py-2">Role</th>
+                <th className="px-3 py-2">Status</th>
+                <th className="px-3 py-2">Created</th>
+                <th className="px-3 py-2">Last Login</th>
+                <th className="px-3 py-2">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u.id} className="border-t border-gray-100 dark:border-gray-700">
+                  <td className="px-3 py-2 font-medium">{u.username}</td>
+                  <td className="px-3 py-2 text-xs text-gray-500">{u.email || '—'}</td>
+                  <td className="px-3 py-2">
+                    <select
+                      value={u.role}
+                      onChange={(e) => changeRole(u.id, e.target.value)}
+                      className="rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-1.5 py-1 text-xs"
+                    >
+                      {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={u.isActive ? 'text-green-600' : 'text-gray-400'}>
+                      {u.isActive ? 'Active' : 'Deactivated'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td className="px-3 py-2 text-xs text-gray-500">
+                    {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : '—'}
+                  </td>
+                  <td className="px-3 py-2 space-x-2 whitespace-nowrap">
+                    <button onClick={() => setResetTarget(u)} className="text-xs text-brand-600 hover:underline">
+                      Reset PW
+                    </button>
+                    <button onClick={() => toggleActive(u)} className="text-xs text-red-600 hover:underline">
+                      {u.isActive ? 'Deactivate' : 'Reactivate'}
+                    </button>
+                    <button onClick={() => forceLogout(u)} className="text-xs text-gray-600 hover:underline">
+                      Force Logout
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {resetTarget && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
@@ -139,14 +155,7 @@ export default function UsersTab() {
             className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 space-y-3"
           >
             <h4 className="font-semibold text-sm">Force reset password for {resetTarget.username}</h4>
-            <input
-              type="password"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-              placeholder="New password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
+            <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New password" required />
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setResetTarget(null)} className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700">
                 Cancel

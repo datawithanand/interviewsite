@@ -1,59 +1,66 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { api } from '../api/client';
-import { useAuth, isWriterOrAdmin } from '../context/AuthContext';
+import { useAuth, isContentManagerOrAdmin } from '../context/AuthContext';
+import NodeTreeItem from './NodeTreeItem';
+import Modal from './Modal';
 
 export default function Sidebar({ open, onClose }) {
   const { user } = useAuth();
-  const [modules, setModules] = useState([]);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [menuOpenId, setMenuOpenId] = useState(null);
-  const [renamingId, setRenamingId] = useState(null);
-  const [renameValue, setRenameValue] = useState('');
+  const [nodes, setNodes] = useState([]);
   const [error, setError] = useState('');
+  const [addModalParent, setAddModalParent] = useState(undefined); // undefined = closed, null = top-level, node = child of node
+  const [newName, setNewName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const loadModules = useCallback(() => {
-    api.get('/modules').then((res) => setModules(res.modules)).catch(() => {});
+  const canManage = isContentManagerOrAdmin(user);
+
+  const loadNodes = useCallback(() => {
+    api.get('/nodes').then((res) => setNodes(res.nodes)).catch(() => {});
   }, []);
 
   useEffect(() => {
-    loadModules();
-  }, [loadModules]);
+    loadNodes();
+  }, [loadNodes]);
 
-  const canManage = isWriterOrAdmin(user);
+  const childrenOf = useMemo(() => {
+    const map = new Map();
+    for (const n of nodes) {
+      const key = n.parentId || 'root';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(n);
+    }
+    return map;
+  }, [nodes]);
 
-  const createModule = async (e) => {
+  const topLevel = (childrenOf.get('root') || []).slice().sort((a, b) => a.name.localeCompare(b.name));
+
+  const submitAdd = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await api.post('/modules', { name: newName });
+      await api.post('/nodes', { name: newName, parentId: addModalParent ? addModalParent.id : null });
       setNewName('');
-      setShowAdd(false);
-      loadModules();
+      setAddModalParent(undefined);
+      loadNodes();
     } catch (err) {
       setError(err.message);
     }
   };
 
-  const renameModule = async (id) => {
-    try {
-      await api.patch(`/modules/${id}`, { name: renameValue });
-      setRenamingId(null);
-      loadModules();
-    } catch (err) {
-      setError(err.message);
-    }
+  const handleRename = async (node, newValue) => {
+    await api.patch(`/nodes/${node.id}`, { name: newValue });
+    loadNodes();
   };
 
-  const deleteModule = async (id, name) => {
-    if (!window.confirm(`Delete module "${name}"? This cannot be undone.`)) return;
+  const confirmDelete = async () => {
     try {
-      await api.del(`/modules/${id}`);
-      setMenuOpenId(null);
-      loadModules();
+      await api.del(`/nodes/${deleteTarget.id}`);
+      setDeleteTarget(null);
+      loadNodes();
     } catch (err) {
       setError(err.message);
+      setDeleteTarget(null);
     }
   };
 
@@ -66,42 +73,17 @@ export default function Sidebar({ open, onClose }) {
         }`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Modules</h2>
+          <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Technologies</h2>
           {canManage && (
             <button
-              onClick={() => setShowAdd((v) => !v)}
-              title="Add module"
+              onClick={() => setAddModalParent(null)}
+              title="Add Technology"
               className="w-6 h-6 flex items-center justify-center rounded-md bg-brand-600 text-white text-sm hover:bg-brand-700"
             >
               +
             </button>
           )}
         </div>
-
-        {showAdd && (
-          <form onSubmit={createModule} className="p-3 border-b border-gray-200 dark:border-gray-700 space-y-2">
-            <input
-              autoFocus
-              className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm"
-              placeholder="Module name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              required
-            />
-            <div className="flex gap-2">
-              <button type="submit" className="flex-1 bg-brand-600 hover:bg-brand-700 text-white rounded-md text-xs py-1.5">
-                Create
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowAdd(false)}
-                className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-md text-xs py-1.5"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
 
         {error && <p className="text-xs text-red-600 px-3 pt-2">{error}</p>}
 
@@ -110,80 +92,80 @@ export default function Sidebar({ open, onClose }) {
             to="/"
             end
             className={({ isActive }) =>
-              `flex items-center justify-between mx-2 mb-1 rounded-lg px-3 py-2 text-sm ${
+              `flex items-center justify-between mx-2 mb-2 rounded-lg px-3 py-1.5 text-sm ${
                 isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
               }`
             }
           >
             All Questions
           </NavLink>
-          {modules.map((m) => (
-            <div key={m.id} className="mx-2 mb-1 group relative">
-              {renamingId === m.id ? (
-                <div className="flex gap-1 px-1">
-                  <input
-                    autoFocus
-                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1 text-sm"
-                    value={renameValue}
-                    onChange={(e) => setRenameValue(e.target.value)}
-                  />
-                  <button onClick={() => renameModule(m.id)} className="text-xs text-brand-600">
-                    Save
-                  </button>
-                </div>
-              ) : (
-                <NavLink
-                  to={`/modules/${m.id}`}
-                  className={({ isActive }) =>
-                    `flex items-center justify-between rounded-lg px-3 py-2 text-sm ${
-                      isActive
-                        ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                    }`
-                  }
-                >
-                  <span className="truncate">{m.name}</span>
-                  <span className="flex items-center gap-1">
-                    <span className="text-xs text-gray-400">{m.questionCount}</span>
-                    {canManage && (
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setMenuOpenId(menuOpenId === m.id ? null : m.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 px-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-                      >
-                        ⋯
-                      </button>
-                    )}
-                  </span>
-                </NavLink>
-              )}
-              {menuOpenId === m.id && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg text-sm overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setRenamingId(m.id);
-                      setRenameValue(m.name);
-                      setMenuOpenId(null);
-                    }}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Rename
-                  </button>
-                  <button
-                    onClick={() => deleteModule(m.id, m.name)}
-                    className="w-full text-left px-3 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
+
+          {topLevel.length === 0 && (
+            <p className="px-4 text-xs text-gray-400">
+              No technologies yet.{canManage ? ' Click "+" above to add one.' : ''}
+            </p>
+          )}
+
+          {topLevel.map((node) => (
+            <NodeTreeItem
+              key={node.id}
+              node={node}
+              childrenOf={childrenOf}
+              depth={0}
+              canManage={canManage}
+              onAdd={(parent) => setAddModalParent(parent)}
+              onRename={handleRename}
+              onDelete={(n) => setDeleteTarget(n)}
+            />
           ))}
         </nav>
       </aside>
+
+      <Modal
+        open={addModalParent !== undefined}
+        onClose={() => setAddModalParent(undefined)}
+        title={addModalParent ? `Add child under "${addModalParent.name}"` : 'Add Technology'}
+      >
+        <form onSubmit={submitAdd} className="space-y-3">
+          <input
+            autoFocus
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
+            placeholder="Name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            required
+          />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setAddModalParent(undefined)} className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700">
+              Cancel
+            </button>
+            <button type="submit" className="px-3 py-1.5 text-sm rounded-lg bg-brand-600 text-white">
+              Create
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete node?">
+        {deleteTarget && (
+          <div className="space-y-4">
+            <p className="text-sm">
+              Delete <strong>{deleteTarget.name}</strong>
+              {!deleteTarget.isLeaf ? ' and all of its submodules and questions' : deleteTarget.questionCount ? ` and its ${deleteTarget.questionCount} question(s)` : ''}?
+              This can only be undone by an administrator restoring from the database.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700">
+                Cancel
+              </button>
+              <button onClick={confirmDelete} className="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white">
+                Delete
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

@@ -22,12 +22,15 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(1),
 });
 
-const securityQuestionsUpdateSchema = z.object({
-  securityQuestions: z
-    .array(z.object({ question: z.string().trim().min(3).max(200), answer: z.string().trim().min(1).max(200) }))
-    .min(3)
-    .max(5),
-});
+const securityQuestionUpdateSchema = z
+  .object({
+    templateId: z.string().min(1).optional(),
+    customQuestion: z.string().trim().min(3).max(200).optional(),
+    answer: z.string().trim().min(1).max(200),
+  })
+  .refine((d) => Boolean(d.templateId) !== Boolean(d.customQuestion), {
+    message: 'Choose one predefined security question or provide a custom question, not both.',
+  });
 
 router.use(authenticate);
 
@@ -43,6 +46,7 @@ router.get('/', async (req, res) => {
       profileAvatarUrl: req.user.profileAvatarUrl,
       createdAt: req.user.createdAt,
       lastLogin: req.user.lastLogin,
+      securityQuestion: req.user.securityQuestion,
       questionsCreated: count,
     },
   });
@@ -97,23 +101,26 @@ router.post('/change-password', async (req, res, next) => {
   }
 });
 
-router.put('/security-questions', async (req, res, next) => {
+router.put('/security-question', async (req, res, next) => {
   try {
-    const data = validate(securityQuestionsUpdateSchema, req.body);
-    const hashed = await Promise.all(
-      data.securityQuestions.map(async (sq) => ({
-        question: sq.question,
-        answerHash: await hashPassword(sq.answer.trim().toLowerCase()),
-        userId: req.user.id,
-      }))
-    );
+    const data = validate(securityQuestionUpdateSchema, req.body);
 
-    await prisma.$transaction([
-      prisma.securityQuestion.deleteMany({ where: { userId: req.user.id } }),
-      prisma.securityQuestion.createMany({ data: hashed }),
-    ]);
+    let questionText;
+    if (data.templateId) {
+      const template = await prisma.securityQuestionTemplate.findUnique({ where: { id: data.templateId } });
+      if (!template || !template.isActive) return res.status(400).json({ error: 'Selected security question is no longer available.' });
+      questionText = template.question;
+    } else {
+      questionText = data.customQuestion;
+    }
 
-    res.json({ message: 'Security questions updated.' });
+    const securityAnswerHash = await hashPassword(data.answer.trim().toLowerCase());
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { securityQuestion: questionText, securityAnswerHash },
+    });
+
+    res.json({ message: 'Security question updated.' });
   } catch (err) {
     next(err);
   }

@@ -1,57 +1,116 @@
 import { useCallback, useEffect, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import Modal from './Modal';
+import HierarchyPicker from './HierarchyPicker';
 import { api } from '../api/client';
 import { CODE_LANGUAGES, DIFFICULTIES, FORMATS } from '../constants';
 import { useTheme } from '../context/ThemeContext';
 
 const emptyForm = {
-  moduleId: '',
   title: '',
-  content: '',
   format: 'TEXT',
   codeLanguage: 'javascript',
-  answer: '',
+  questionText: '',
+  questionCode: '',
+  answerText: '',
+  answerCode: '',
   difficulty: 'BEGINNER',
   tags: '',
 };
 
-export default function QuestionFormModal({ open, onClose, onSaved, modules, moduleId, question }) {
+function TextOrCodeField({ label, format, textValue, codeValue, onTextChange, onCodeChange, codeLanguage, dark }) {
+  const showText = format !== 'CODE';
+  const showCode = format !== 'TEXT';
+  return (
+    <div className="space-y-3">
+      {showText && (
+        <div>
+          <label className="block text-sm font-medium mb-1">{label} — Text</label>
+          <textarea
+            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
+            rows={4}
+            value={textValue}
+            onChange={(e) => onTextChange(e.target.value)}
+            required
+          />
+        </div>
+      )}
+      {showCode && (
+        <div>
+          <label className="block text-sm font-medium mb-1">{label} — Code</label>
+          <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+            <Editor
+              height="180px"
+              language={codeLanguage}
+              theme={dark ? 'vs-dark' : 'light'}
+              value={codeValue}
+              onChange={(v) => onCodeChange(v || '')}
+              options={{ minimap: { enabled: false }, fontSize: 13 }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function QuestionFormModal({ open, onClose, onSaved, nodeId, question }) {
   const { dark } = useTheme();
   const [form, setForm] = useState(emptyForm);
+  const [selectedNodeId, setSelectedNodeId] = useState(nodeId || null);
+  const [selectedNodePath, setSelectedNodePath] = useState(null);
+  const [pickingLocation, setPickingLocation] = useState(false);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (question) {
       setForm({
-        moduleId: question.moduleId,
         title: question.title,
-        content: question.content,
         format: question.format,
         codeLanguage: question.codeLanguage || 'javascript',
-        answer: question.answer,
+        questionText: question.questionText || '',
+        questionCode: question.questionCode || '',
+        answerText: question.answerText || '',
+        answerCode: question.answerCode || '',
         difficulty: question.difficulty,
         tags: (question.tags || []).join(', '),
       });
+      setSelectedNodeId(question.nodeId);
     } else {
-      setForm({ ...emptyForm, moduleId: moduleId || (modules[0] && modules[0].id) || '' });
+      setForm(emptyForm);
+      setSelectedNodeId(nodeId || null);
     }
+    setPickingLocation(!question && !nodeId);
     setError('');
-  }, [question, moduleId, modules, open]);
+  }, [question, nodeId, open]);
+
+  useEffect(() => {
+    if (!selectedNodeId) {
+      setSelectedNodePath(null);
+      return;
+    }
+    api.get(`/nodes/${selectedNodeId}`).then((res) => setSelectedNodePath(res.node.path)).catch(() => setSelectedNodePath(null));
+  }, [selectedNodeId]);
 
   const submit = useCallback(
     async (e) => {
       e?.preventDefault?.();
       setError('');
+      if (!selectedNodeId) {
+        setError('Choose where this question belongs first.');
+        return;
+      }
       setSaving(true);
       try {
         const payload = {
           title: form.title,
-          content: form.content,
           format: form.format,
           codeLanguage: form.format === 'TEXT' ? null : form.codeLanguage,
-          answer: form.answer,
+          questionText: form.format === 'CODE' ? null : form.questionText,
+          questionCode: form.format === 'TEXT' ? null : form.questionCode,
+          answerText: form.format === 'CODE' ? null : form.answerText,
+          answerCode: form.format === 'TEXT' ? null : form.answerCode,
           difficulty: form.difficulty,
           tags: form.tags
             .split(',')
@@ -61,7 +120,7 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
         if (question) {
           await api.patch(`/questions/${question.id}`, payload);
         } else {
-          await api.post('/questions', { ...payload, moduleId: form.moduleId });
+          await api.post('/questions', { ...payload, nodeId: selectedNodeId });
         }
         onSaved();
         onClose();
@@ -71,7 +130,7 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
         setSaving(false);
       }
     },
-    [form, question, onSaved, onClose]
+    [form, question, selectedNodeId, onSaved, onClose]
   );
 
   // Ctrl/Cmd+S saves the form instead of triggering the browser's save dialog.
@@ -87,27 +146,43 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
     return () => window.removeEventListener('keydown', handler);
   }, [open, submit]);
 
-  const showEditor = form.format !== 'TEXT';
-
   return (
     <Modal open={open} onClose={onClose} title={question ? 'Edit Question' : 'New Question'} wide>
       <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Location</label>
+          {!question && (
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                {selectedNodePath ? selectedNodePath.map((p) => p.name).join(' > ') : 'Not chosen yet'}
+              </span>
+              <button type="button" onClick={() => setPickingLocation((v) => !v)} className="text-xs text-brand-600 hover:underline">
+                {pickingLocation ? 'Hide' : 'Change'}
+              </button>
+            </div>
+          )}
+          {question && (
+            <p className="text-sm text-gray-500">{selectedNodePath ? selectedNodePath.map((p) => p.name).join(' > ') : '…'}</p>
+          )}
+          {!question && pickingLocation && (
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+              <HierarchyPicker mode="pickLeaf" initialNodeId={selectedNodeId} onSelect={(id) => {
+                setSelectedNodeId(id);
+                setPickingLocation(false);
+              }} />
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Module</label>
-            <select
+            <label className="block text-sm font-medium mb-1">Title</label>
+            <input
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-              value={form.moduleId}
-              onChange={(e) => setForm({ ...form, moduleId: e.target.value })}
-              disabled={!!question}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
               required
-            >
-              {modules.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Difficulty</label>
@@ -125,16 +200,6 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-            value={form.title}
-            onChange={(e) => setForm({ ...form, title: e.target.value })}
-            required
-          />
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Format</label>
@@ -150,7 +215,7 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
               ))}
             </select>
           </div>
-          {showEditor && (
+          {form.format !== 'TEXT' && (
             <div>
               <label className="block text-sm font-medium mb-1">Code Language</label>
               <select
@@ -168,52 +233,32 @@ export default function QuestionFormModal({ open, onClose, onSaved, modules, mod
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Question Content</label>
-          {showEditor ? (
-            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <Editor
-                height="200px"
-                language={form.codeLanguage}
-                theme={dark ? 'vs-dark' : 'light'}
-                value={form.content}
-                onChange={(v) => setForm({ ...form, content: v || '' })}
-                options={{ minimap: { enabled: false }, fontSize: 13 }}
-              />
-            </div>
-          ) : (
-            <textarea
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-              rows={4}
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              required
-            />
-          )}
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <h4 className="text-sm font-semibold mb-2">Question</h4>
+          <TextOrCodeField
+            label="Question"
+            format={form.format}
+            textValue={form.questionText}
+            codeValue={form.questionCode}
+            onTextChange={(v) => setForm({ ...form, questionText: v })}
+            onCodeChange={(v) => setForm({ ...form, questionCode: v })}
+            codeLanguage={form.codeLanguage}
+            dark={dark}
+          />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Answer</label>
-          {showEditor ? (
-            <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-              <Editor
-                height="200px"
-                language={form.codeLanguage}
-                theme={dark ? 'vs-dark' : 'light'}
-                value={form.answer}
-                onChange={(v) => setForm({ ...form, answer: v || '' })}
-                options={{ minimap: { enabled: false }, fontSize: 13 }}
-              />
-            </div>
-          ) : (
-            <textarea
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-              rows={4}
-              value={form.answer}
-              onChange={(e) => setForm({ ...form, answer: e.target.value })}
-              required
-            />
-          )}
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+          <h4 className="text-sm font-semibold mb-2">Answer</h4>
+          <TextOrCodeField
+            label="Answer"
+            format={form.format}
+            textValue={form.answerText}
+            codeValue={form.answerCode}
+            onTextChange={(v) => setForm({ ...form, answerText: v })}
+            onCodeChange={(v) => setForm({ ...form, answerCode: v })}
+            codeLanguage={form.codeLanguage}
+            dark={dark}
+          />
         </div>
 
         <div>

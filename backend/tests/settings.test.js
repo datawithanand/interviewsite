@@ -17,7 +17,7 @@ afterAll(async () => {
 
 describe('Admin settings', () => {
   test('non-admin cannot read or change settings', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const get = await request(app).get('/api/settings').set(authHeader(token));
     expect(get.status).toBe(403);
     const patch = await request(app).patch('/api/settings').set(authHeader(token)).send({ passwordMinLength: 12 });
@@ -48,11 +48,7 @@ describe('Admin settings', () => {
       .send({
         username: 'settingstest_shortpw',
         password: 'Short123', // 8 chars, below the new 16 minimum
-        securityQuestions: [
-          { question: 'q one?', answer: 'a' },
-          { question: 'q two?', answer: 'b' },
-          { question: 'q three?', answer: 'c' },
-        ],
+        securityQuestion: { customQuestion: 'q one?', answer: 'a' },
       });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/16 characters/);
@@ -75,11 +71,7 @@ describe('Admin settings', () => {
       .send({
         username,
         password: 'GoodPass123',
-        securityQuestions: [
-          { question: 'q one?', answer: 'a' },
-          { question: 'q two?', answer: 'b' },
-          { question: 'q three?', answer: 'c' },
-        ],
+        securityQuestion: { customQuestion: 'q one?', answer: 'a' },
       });
 
     await request(app).post('/api/auth/login').send({ username, password: 'WrongPassword1' });
@@ -102,11 +94,7 @@ describe('Admin settings', () => {
       .send({
         username: 'settingstest_blocked',
         password: 'GoodPass123',
-        securityQuestions: [
-          { question: 'q one?', answer: 'a' },
-          { question: 'q two?', answer: 'b' },
-          { question: 'q three?', answer: 'c' },
-        ],
+        securityQuestion: { customQuestion: 'q one?', answer: 'a' },
       });
     expect(res.status).toBe(403);
 

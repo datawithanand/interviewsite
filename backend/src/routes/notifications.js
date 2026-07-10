@@ -40,7 +40,7 @@ router.get('/', async (req, res, next) => {
         message: n.message,
         actorUsername: n.actor ? n.actor.username : null,
         relatedQuestionId: n.relatedQuestionId,
-        relatedModuleId: n.relatedModuleId,
+        relatedNodeId: n.relatedNodeId,
         isRead: n.isRead,
         createdAt: n.createdAt,
       })),

@@ -47,22 +47,20 @@ export default function QuestionDetailModal({ open, onClose, questionId }) {
 
           <div>
             <h4 className="text-sm font-semibold mb-1">Question</h4>
-            {question.format === 'TEXT' ? (
-              <p className="text-sm whitespace-pre-wrap">{question.content}</p>
-            ) : (
+            {question.questionText && <p className="text-sm whitespace-pre-wrap mb-2">{question.questionText}</p>}
+            {question.questionCode && (
               <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
-                <code>{question.content}</code>
+                <code>{question.questionCode}</code>
               </pre>
             )}
           </div>
 
           <div>
             <h4 className="text-sm font-semibold mb-1">Answer</h4>
-            {question.format === 'TEXT' ? (
-              <p className="text-sm whitespace-pre-wrap">{question.answer}</p>
-            ) : (
+            {question.answerText && <p className="text-sm whitespace-pre-wrap mb-2">{question.answerText}</p>}
+            {question.answerCode && (
               <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
-                <code>{question.answer}</code>
+                <code>{question.answerCode}</code>
               </pre>
             )}
           </div>

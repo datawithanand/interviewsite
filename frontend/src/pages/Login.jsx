@@ -1,6 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import PasswordInput from '../components/PasswordInput';
+
+const QUOTES = [
+  'One question today, one expert tomorrow.',
+  'Knowledge grows one answer at a time.',
+  'Learn. Practice. Master.',
+  'Every expert started with a single question.',
+  "Debugging your interview nerves, one rep at a time.",
+];
 
 export default function Login() {
   const { login } = useAuth();
@@ -9,6 +18,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const quote = useMemo(() => QUOTES[Math.floor(Math.random() * QUOTES.length)], []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -25,48 +35,64 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-white dark:bg-gray-800 shadow-sm rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-        <h1 className="text-xl font-semibold mb-1">ServiceNow Interview Questions</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Sign in to continue</p>
-        <form onSubmit={submit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Username</label>
-            <input
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              autoComplete="username"
-              required
-            />
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 px-4">
+      {/* Floating background shapes — purely decorative, aria-hidden */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-24 -left-24 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 -right-20 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse [animation-delay:1s]" />
+        <div className="absolute -bottom-24 left-1/4 w-80 h-80 bg-indigo-300/20 rounded-full blur-3xl animate-pulse [animation-delay:2s]" />
+        <div className="absolute inset-0 flex items-center justify-center text-[18rem] opacity-[0.04] select-none font-mono">{'{ }'}</div>
+      </div>
+
+      <div className="relative w-full max-w-sm">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-3xl mb-3">
+            🧠
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete="current-password"
-              required
-            />
+          <h1 className="text-2xl font-semibold text-white">TechPrep Hub</h1>
+          <p className="text-sm text-white/70 mt-1 italic">"{quote}"</p>
+        </div>
+
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl p-8">
+          <p className="text-sm text-white/80 mb-5">Sign in to continue</p>
+          <form onSubmit={submit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-white/90">Username</label>
+              <input
+                className="w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/40 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-white/60"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-white/90">Password</label>
+              <PasswordInput
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+                className="w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/40 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-white/60"
+              />
+            </div>
+            {error && <p className="text-sm text-red-200 bg-red-500/20 rounded-lg px-3 py-2">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-white text-brand-700 hover:bg-white/90 disabled:opacity-60 rounded-lg py-2 text-sm font-semibold transition-all"
+            >
+              {loading ? 'Signing in…' : 'Sign in'}
+            </button>
+          </form>
+          <div className="flex justify-between mt-4 text-sm">
+            <Link to="/forgot-password" className="text-white/80 hover:text-white hover:underline">
+              Forgot password?
+            </Link>
+            <Link to="/register" className="text-white/80 hover:text-white hover:underline">
+              Create account
+            </Link>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-60 text-white rounded-lg py-2 text-sm font-medium transition-colors"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-        </form>
-        <div className="flex justify-between mt-4 text-sm">
-          <Link to="/forgot-password" className="text-brand-600 hover:underline">
-            Forgot password?
-          </Link>
-          <Link to="/register" className="text-brand-600 hover:underline">
-            Create account
-          </Link>
         </div>
       </div>
     </div>

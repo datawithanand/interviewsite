@@ -9,23 +9,23 @@ afterAll(async () => {
 });
 
 describe('Audit logs', () => {
-  test('module creation is captured in the audit log', async () => {
+  test('node creation is captured in the audit log', async () => {
     const { token: adminToken } = await createTestUser({ role: ROLES.ADMIN });
-    const { token: writerToken } = await createTestUser({ role: ROLES.WRITER });
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
 
     const create = await request(app)
-      .post('/api/modules')
-      .set(authHeader(writerToken))
-      .send({ name: `AuditedModule_${Date.now()}` });
+      .post('/api/nodes')
+      .set(authHeader(cmToken))
+      .send({ name: `AuditedNode_${Date.now()}` });
     expect(create.status).toBe(201);
 
     const logs = await request(app)
       .get('/api/audit-logs')
-      .query({ targetType: 'MODULE', action: 'CREATE' })
+      .query({ targetType: 'NODE', action: 'CREATE' })
       .set(authHeader(adminToken));
 
     expect(logs.status).toBe(200);
-    expect(logs.body.logs.some((l) => l.targetId === create.body.module.id)).toBe(true);
+    expect(logs.body.logs.some((l) => l.targetId === create.body.node.id)).toBe(true);
   });
 
   test('failed login attempts are logged', async () => {
@@ -36,11 +36,7 @@ describe('Audit logs', () => {
       .send({
         username,
         password: 'GoodPass123',
-        securityQuestions: [
-          { question: 'q1', answer: 'a1' },
-          { question: 'q2', answer: 'a2' },
-          { question: 'q3', answer: 'a3' },
-        ],
+        securityQuestion: { customQuestion: 'q1?', answer: 'a1' },
       });
     await request(app).post('/api/auth/login').send({ username, password: 'WrongPassword1' });
 

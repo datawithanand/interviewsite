@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import { useAuth, isWriterOrAdmin } from '../context/AuthContext';
+import { useAuth, isContentManagerOrAdmin } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { DIFFICULTIES, FORMATS, FORMAT_ICON, DIFFICULTY_COLOR } from '../constants';
 import QuestionFormModal from '../components/QuestionFormModal';
@@ -26,12 +26,12 @@ function pushRecentSearch(term) {
 }
 
 export default function QuestionsView() {
-  const { moduleId } = useParams();
+  const { nodeId } = useParams();
   const { user } = useAuth();
   const { showToast } = useToast();
-  const canManage = isWriterOrAdmin(user);
+  const canManage = isContentManagerOrAdmin(user);
 
-  const [modules, setModules] = useState([]);
+  const [nodePath, setNodePath] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -55,11 +55,18 @@ export default function QuestionsView() {
   const searchInputRef = useRef(null);
 
   useEffect(() => {
-    api.get('/modules').then((res) => setModules(res.modules));
-  }, [formOpen]);
+    if (!nodeId) {
+      setNodePath(null);
+      return;
+    }
+    api
+      .get(`/nodes/${nodeId}`)
+      .then((res) => setNodePath(res.node.path))
+      .catch(() => setNodePath(null));
+  }, [nodeId]);
 
   const loadSavedSearches = useCallback(() => {
-    api.get('/saved-searches').then((res) => setSavedSearches(res.savedSearches));
+    api.get('/saved-searches').then((res) => setSavedSearches(res.savedSearches)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -83,7 +90,7 @@ export default function QuestionsView() {
     setLoading(true);
     setError('');
     const params = new URLSearchParams();
-    if (moduleId) params.set('moduleId', moduleId);
+    if (nodeId) params.set('nodeId', nodeId);
     if (search) params.set('q', search);
     if (difficulty) params.set('difficulty', difficulty);
     if (format) params.set('format', format);
@@ -99,7 +106,7 @@ export default function QuestionsView() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [moduleId, search, difficulty, format, sort, favoritesOnly]);
+  }, [nodeId, search, difficulty, format, sort, favoritesOnly]);
 
   useEffect(() => {
     load();
@@ -114,8 +121,6 @@ export default function QuestionsView() {
     }, 1200); // debounce so every keystroke doesn't spam history
     return () => clearTimeout(handle);
   }, [search]);
-
-  const currentModule = modules.find((m) => m.id === moduleId);
 
   const toggleFavorite = async (q) => {
     if (q.favoritedByMe) await api.del(`/questions/${q.id}/favorite`);
@@ -133,13 +138,15 @@ export default function QuestionsView() {
         onClick: async () => {
           try {
             await api.post('/questions', {
-              moduleId: q.moduleId,
+              nodeId: q.nodeId,
               serialNumber: q.serialNumber,
               title: q.title,
-              content: q.content,
               format: q.format,
               codeLanguage: q.codeLanguage,
-              answer: q.answer,
+              questionText: q.questionText,
+              questionCode: q.questionCode,
+              answerText: q.answerText,
+              answerCode: q.answerCode,
               difficulty: q.difficulty,
               tags: q.tags,
             });
@@ -157,7 +164,7 @@ export default function QuestionsView() {
     load();
   };
 
-  const currentFilters = { moduleId, difficulty, format, sort, favoritesOnly, q: search };
+  const currentFilters = { nodeId, difficulty, format, sort, favoritesOnly, q: search };
 
   const applySavedSearch = (s) => {
     setDifficulty(s.filters.difficulty || '');
@@ -187,8 +194,19 @@ export default function QuestionsView() {
   return (
     <div>
       <div className="mb-4">
-        <h1 className="text-xl font-semibold">ServiceNow Interview Questions</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{currentModule ? currentModule.name : 'All Modules'}</p>
+        <h1 className="text-xl font-semibold">Interview Questions</h1>
+        {nodePath ? (
+          <nav className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-1" aria-label="Breadcrumb">
+            {nodePath.map((p, i) => (
+              <span key={p.id} className="flex items-center gap-1">
+                {i > 0 && <span className="text-gray-300 dark:text-gray-600">›</span>}
+                <span className={i === nodePath.length - 1 ? 'font-medium text-gray-700 dark:text-gray-200' : ''}>{p.name}</span>
+              </span>
+            ))}
+          </nav>
+        ) : (
+          <p className="text-sm text-gray-500 dark:text-gray-400">All Technologies</p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2 items-center mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
@@ -197,7 +215,7 @@ export default function QuestionsView() {
             ref={searchInputRef}
             list="recent-searches"
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-1.5 text-sm pr-14"
-            placeholder="Search title, content, answer…"
+            placeholder="Search title, text, code…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -305,9 +323,20 @@ export default function QuestionsView() {
 
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
       {loading && <p className="text-sm text-gray-500">Loading…</p>}
-      {!loading && questions.length === 0 && <p className="text-sm text-gray-500">No questions found.</p>}
+      {!loading && questions.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          <p className="text-sm">
+            {search || difficulty || format || favoritesOnly ? 'No questions match your filters.' : 'No questions here yet.'}
+          </p>
+          {canManage && !search && !difficulty && !format && !favoritesOnly && (
+            <button onClick={() => setFormOpen(true)} className="mt-2 text-sm text-brand-600 hover:underline">
+              + Add the first question
+            </button>
+          )}
+        </div>
+      )}
 
-      <p className="text-xs text-gray-400 mb-2">{total} question(s)</p>
+      {questions.length > 0 && <p className="text-xs text-gray-400 mb-2">{total} question(s)</p>}
 
       <div className={view === 'card' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'space-y-2'}>
         {questions.map((q) => (
@@ -326,7 +355,7 @@ export default function QuestionsView() {
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFFICULTY_COLOR[q.difficulty]}`}>
                     {q.difficulty}
                   </span>
-                  {q.module && !moduleId && <span className="text-xs text-gray-400">{q.module.name}</span>}
+                  {q.node && !nodeId && <span className="text-xs text-gray-400">{q.node.name}</span>}
                   <span className="text-xs text-gray-400">by {q.createdByUsername || 'unknown'}</span>
                   <span className="text-xs text-gray-400">
                     updated {new Date(q.updatedAt).toLocaleDateString()}
@@ -378,8 +407,7 @@ export default function QuestionsView() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSaved={load}
-        modules={modules}
-        moduleId={moduleId}
+        nodeId={nodeId}
         question={editingQuestion}
       />
       <QuestionDetailModal open={!!detailId} onClose={() => setDetailId(null)} questionId={detailId} />

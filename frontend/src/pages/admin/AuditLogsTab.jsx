@@ -5,12 +5,16 @@ export default function AuditLogsTab() {
   const [logs, setLogs] = useState([]);
   const [action, setAction] = useState('');
   const [targetType, setTargetType] = useState('');
+  const [error, setError] = useState('');
 
   const load = () => {
     const params = new URLSearchParams();
     if (action) params.set('action', action);
     if (targetType) params.set('targetType', targetType);
-    api.get(`/audit-logs?${params.toString()}`).then((res) => setLogs(res.logs));
+    api
+      .get(`/audit-logs?${params.toString()}`)
+      .then((res) => setLogs(res.logs))
+      .catch((err) => setError(err.message));
   };
 
   useEffect(() => {
@@ -41,7 +45,20 @@ export default function AuditLogsTab() {
           onChange={(e) => setAction(e.target.value)}
         >
           <option value="">All actions</option>
-          {['LOGIN', 'LOGIN_FAILED', 'LOGOUT', 'CREATE', 'EDIT', 'DELETE', 'IMPORT', 'EXPORT', 'ROLE_CHANGE', 'PASSWORD_RESET', 'ACCOUNT_DEACTIVATED'].map(
+          {[
+            'LOGIN',
+            'LOGIN_FAILED',
+            'LOGOUT',
+            'CREATE',
+            'EDIT',
+            'DELETE',
+            'IMPORT',
+            'EXPORT',
+            'FULL_EXPORT',
+            'ROLE_CHANGE',
+            'PASSWORD_RESET',
+            'ACCOUNT_DEACTIVATED',
+          ].map(
             (a) => (
               <option key={a} value={a}>
                 {a}
@@ -55,7 +72,7 @@ export default function AuditLogsTab() {
           onChange={(e) => setTargetType(e.target.value)}
         >
           <option value="">All target types</option>
-          {['USER', 'QUESTION', 'MODULE', 'PASSWORD_RESET', 'SESSION'].map((t) => (
+          {['USER', 'QUESTION', 'NODE', 'PASSWORD_RESET', 'SESSION', 'SETTINGS', 'COMMENT', 'DATABASE'].map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -65,6 +82,8 @@ export default function AuditLogsTab() {
           Export CSV
         </button>
       </div>
+
+      {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
 
       <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
         <table className="w-full text-sm">
@@ -79,6 +98,13 @@ export default function AuditLogsTab() {
             </tr>
           </thead>
           <tbody>
+            {logs.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-3 py-4 text-center text-xs text-gray-400">
+                  No audit log entries match your filters.
+                </td>
+              </tr>
+            )}
             {logs.map((l) => (
               <tr key={l.id} className="border-t border-gray-100 dark:border-gray-700">
                 <td className="px-3 py-2 text-xs text-gray-500">{new Date(l.timestamp).toLocaleString()}</td>

@@ -13,41 +13,28 @@ async function createTestUser({ role = ROLES.REGULAR_USER, username } = {}) {
   const uname = username || `user_${uuid().slice(0, 8)}`;
   const password = 'TestPass123';
   const passwordHash = await hashPassword(password);
-
-  const securityAnswers = [
-    { question: 'First pet name?', answer: 'fluffy' },
-    { question: 'Favorite color?', answer: 'blue' },
-    { question: 'Birth city?', answer: 'metropolis' },
-  ];
+  const securityQuestion = 'First pet name?';
+  const securityAnswer = 'fluffy';
+  const securityAnswerHash = await hashPassword(securityAnswer);
 
   const user = await prisma.user.create({
-    data: {
-      username: uname,
-      passwordHash,
-      role,
-      securityQuestions: {
-        create: await Promise.all(
-          securityAnswers.map(async (sq) => ({
-            question: sq.question,
-            answerHash: await hashPassword(sq.answer),
-          }))
-        ),
-      },
-    },
+    data: { username: uname, passwordHash, role, securityQuestion, securityAnswerHash },
   });
 
   const { token } = await createSession(user, { ipAddress: '127.0.0.1', userAgent: 'jest' });
-  return { user, token, password, securityAnswers };
+  return { user, token, password, securityQuestion, securityAnswer };
 }
 
 function authHeader(token) {
   return { Authorization: `Bearer ${token}` };
 }
 
-async function createTestModule({ name, createdById } = {}) {
-  return prisma.module.create({
-    data: { name: name || `Module ${uuid().slice(0, 8)}`, createdById: createdById || null },
+// Creates a leaf Node ready to hold questions. `parentId` lets tests build
+// multi-level chains (Technology -> Submodule -> Child) when needed.
+async function createTestNode({ name, parentId, createdById } = {}) {
+  return prisma.node.create({
+    data: { name: name || `Node ${uuid().slice(0, 8)}`, parentId: parentId || null, createdById: createdById || null },
   });
 }
 
-module.exports = { buildApp, createTestUser, authHeader, createTestModule, prisma };
+module.exports = { buildApp, createTestUser, authHeader, createTestNode, prisma };

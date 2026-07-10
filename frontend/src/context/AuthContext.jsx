@@ -74,8 +74,8 @@ export function useAuth() {
   return ctx;
 }
 
-export function isWriterOrAdmin(user) {
-  return !!user && (user.role === 'WRITER' || user.role === 'ADMIN');
+export function isContentManagerOrAdmin(user) {
+  return !!user && (user.role === 'CONTENT_MANAGER' || user.role === 'ADMIN');
 }
 
 export function isAdmin(user) {

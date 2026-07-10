@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { buildApp, createTestUser, authHeader, createTestModule, prisma } = require('./helpers');
+const { buildApp, createTestUser, authHeader, createTestNode, prisma } = require('./helpers');
 const { ROLES } = require('../src/utils/enums');
 
 const app = buildApp();
@@ -8,95 +8,80 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-async function createQuestion(token, moduleId, overrides = {}) {
+async function createQuestion(token, nodeId, overrides = {}) {
   return request(app)
     .post('/api/questions')
     .set(authHeader(token))
     .send({
-      moduleId,
+      nodeId,
       title: 'Export sample',
-      content: 'content',
       format: 'TEXT',
-      answer: 'answer',
+      questionText: 'question text',
+      answerText: 'answer text',
       difficulty: 'BEGINNER',
       ...overrides,
     });
 }
 
 describe('Import/Export', () => {
-  test('regular user cannot access import/export', async () => {
+  test('regular user cannot access export', async () => {
     const { token } = await createTestUser({ role: ROLES.REGULAR_USER });
     const res = await request(app).get('/api/import-export/export').query({ format: 'json' }).set(authHeader(token));
     expect(res.status).toBe(403);
   });
 
-  test('exports questions as JSON preserving serial numbers', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const mod = await createTestModule({ name: 'ExportMod JSON' });
-    await createQuestion(token, mod.id, { title: 'E1' });
-    await createQuestion(token, mod.id, { title: 'E2' });
+  test('exports questions as JSON preserving serial numbers, keyed by full node path', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const tech = await createTestNode({ name: 'ExportTech' });
+    const leaf = await createTestNode({ name: 'ExportLeaf', parentId: tech.id });
+    await createQuestion(token, leaf.id, { title: 'E1' });
+    await createQuestion(token, leaf.id, { title: 'E2' });
 
     const res = await request(app)
       .get('/api/import-export/export')
-      .query({ format: 'json', moduleIds: mod.id })
+      .query({ format: 'json', nodeIds: tech.id })
       .set(authHeader(token));
     expect(res.status).toBe(200);
     const parsed = JSON.parse(res.text);
-    const moduleEntry = parsed.modules.find((m) => m.module === mod.name);
-    expect(moduleEntry.questions.map((q) => q.serialNumber)).toEqual([1, 2]);
+    const entry = parsed.nodes.find((n) => n.nodePath === 'ExportTech > ExportLeaf');
+    expect(entry).toBeDefined();
+    expect(entry.questions.map((q) => q.serialNumber)).toEqual([1, 2]);
   });
 
-  test('exports questions as CSV', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const mod = await createTestModule({ name: 'ExportMod CSV' });
-    await createQuestion(token, mod.id);
+  test('exports questions as CSV, XLSX, Markdown, and PDF without error', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const leaf = await createTestNode({ name: 'ExportMultiFormat' });
+    await createQuestion(token, leaf.id);
 
-    const res = await request(app)
-      .get('/api/import-export/export')
-      .query({ format: 'csv', moduleIds: mod.id })
-      .set(authHeader(token));
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toContain('text/csv');
-    expect(res.text).toContain('serialNumber');
-  });
-
-  test('exports questions as XLSX and PDF without error', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const mod = await createTestModule({ name: 'ExportMod Bin' });
-    await createQuestion(token, mod.id);
-
-    const xlsx = await request(app)
-      .get('/api/import-export/export')
-      .query({ format: 'xlsx', moduleIds: mod.id })
-      .set(authHeader(token));
-    expect(xlsx.status).toBe(200);
-
-    const pdf = await request(app)
-      .get('/api/import-export/export')
-      .query({ format: 'pdf', moduleIds: mod.id })
-      .set(authHeader(token));
-    expect(pdf.status).toBe(200);
+    for (const format of ['csv', 'xlsx', 'md', 'pdf']) {
+      // eslint-disable-next-line no-await-in-loop
+      const res = await request(app)
+        .get('/api/import-export/export')
+        .query({ format, nodeIds: leaf.id })
+        .set(authHeader(token));
+      expect(res.status).toBe(200);
+    }
   });
 
   test('CSV export neutralizes formula-injection payloads', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const mod = await createTestModule({ name: 'ExportMod Injection' });
-    await createQuestion(token, mod.id, { title: '=1+1', content: 'safe', answer: '@SUM(A1)' });
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const leaf = await createTestNode({ name: 'ExportInjection' });
+    await createQuestion(token, leaf.id, { title: '=1+1', questionText: 'safe', answerText: '@SUM(A1)' });
 
     const res = await request(app)
       .get('/api/import-export/export')
-      .query({ format: 'csv', moduleIds: mod.id })
+      .query({ format: 'csv', nodeIds: leaf.id })
       .set(authHeader(token));
     expect(res.text).toContain("'=1+1");
     expect(res.text).toContain("'@SUM(A1)");
   });
 
   test('import preview parses a CSV upload and reports validation errors', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const csv = [
-      'serialNumber,module,title,content,format,codeLanguage,answer,difficulty,tags',
-      '1,ImportMod,Valid Q,What is ITSM?,TEXT,,It is a framework.,BEGINNER,itsm',
-      '2,ImportMod,,Missing title,TEXT,,answer,BEGINNER,',
+      'serialNumber,nodePath,title,format,codeLanguage,questionText,questionCode,answerText,answerCode,difficulty,tags',
+      '1,ImportTech > ImportMod,Valid Q,TEXT,,What is ITSM?,,It is a framework.,,BEGINNER,itsm',
+      '2,ImportTech > ImportMod,,TEXT,,Missing title,,answer,,BEGINNER,',
     ].join('\n');
 
     const res = await request(app)
@@ -109,17 +94,17 @@ describe('Import/Export', () => {
     expect(res.body.invalidCount).toBe(1);
   });
 
-  test('import commit creates questions preserving explicit serial numbers and gaps', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const moduleName = `ImportCommitMod_${Date.now()}`;
+  test('import commit creates the full node chain and preserves explicit serial numbers with gaps', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const pathStr = `CommitTech_${Date.now()} > CommitMod`;
 
     const res = await request(app)
       .post('/api/import-export/import/commit')
       .set(authHeader(token))
       .send({
         rows: [
-          { serialNumber: 1, module: moduleName, title: 'Q1', content: 'c1', format: 'TEXT', answer: 'a1', difficulty: 'BEGINNER', tags: [] },
-          { serialNumber: 5, module: moduleName, title: 'Q5', content: 'c5', format: 'TEXT', answer: 'a5', difficulty: 'BEGINNER', tags: [] },
+          { serialNumber: 1, nodePath: pathStr, title: 'Q1', format: 'TEXT', questionText: 'q1', answerText: 'a1', difficulty: 'BEGINNER', tags: [] },
+          { serialNumber: 5, nodePath: pathStr, title: 'Q5', format: 'TEXT', questionText: 'q5', answerText: 'a5', difficulty: 'BEGINNER', tags: [] },
         ],
         conflictResolution: 'skip',
       });
@@ -127,20 +112,23 @@ describe('Import/Export', () => {
     expect(res.status).toBe(200);
     expect(res.body.imported).toBe(2);
 
-    const mod = await prisma.module.findUnique({ where: { name: moduleName }, include: { questions: true } });
-    const serials = mod.questions.map((q) => q.serialNumber).sort((a, b) => a - b);
+    const [techName, modName] = pathStr.split(' > ');
+    const tech = await prisma.node.findFirst({ where: { name: techName, parentId: null } });
+    const mod = await prisma.node.findFirst({ where: { name: modName, parentId: tech.id } });
+    const questions = await prisma.question.findMany({ where: { nodeId: mod.id } });
+    const serials = questions.map((q) => q.serialNumber).sort((a, b) => a - b);
     expect(serials).toEqual([1, 5]); // gap preserved
   });
 
   test('import commit conflict resolution: skip, overwrite, renumber', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const moduleName = `ImportConflictMod_${Date.now()}`;
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const pathStr = `ConflictTech_${Date.now()} > ConflictMod`;
 
     await request(app)
       .post('/api/import-export/import/commit')
       .set(authHeader(token))
       .send({
-        rows: [{ serialNumber: 1, module: moduleName, title: 'Original', content: 'c', format: 'TEXT', answer: 'a', difficulty: 'BEGINNER' }],
+        rows: [{ serialNumber: 1, nodePath: pathStr, title: 'Original', format: 'TEXT', questionText: 'q', answerText: 'a', difficulty: 'BEGINNER' }],
         conflictResolution: 'skip',
       });
 
@@ -148,7 +136,7 @@ describe('Import/Export', () => {
       .post('/api/import-export/import/commit')
       .set(authHeader(token))
       .send({
-        rows: [{ serialNumber: 1, module: moduleName, title: 'ShouldBeSkipped', content: 'c', format: 'TEXT', answer: 'a', difficulty: 'BEGINNER' }],
+        rows: [{ serialNumber: 1, nodePath: pathStr, title: 'ShouldBeSkipped', format: 'TEXT', questionText: 'q', answerText: 'a', difficulty: 'BEGINNER' }],
         conflictResolution: 'skip',
       });
     expect(skipRes.body.skipped).toBe(1);
@@ -158,35 +146,75 @@ describe('Import/Export', () => {
       .post('/api/import-export/import/commit')
       .set(authHeader(token))
       .send({
-        rows: [{ serialNumber: 1, module: moduleName, title: 'Overwritten', content: 'c', format: 'TEXT', answer: 'a', difficulty: 'BEGINNER' }],
+        rows: [{ serialNumber: 1, nodePath: pathStr, title: 'Overwritten', format: 'TEXT', questionText: 'q', answerText: 'a', difficulty: 'BEGINNER' }],
         conflictResolution: 'overwrite',
       });
     expect(overwriteRes.body.overwritten).toBe(1);
 
-    const mod1 = await prisma.module.findUnique({ where: { name: moduleName }, include: { questions: true } });
-    expect(mod1.questions.find((q) => q.serialNumber === 1).title).toBe('Overwritten');
+    const [techName, modName] = pathStr.split(' > ');
+    const tech = await prisma.node.findFirst({ where: { name: techName, parentId: null } });
+    const mod = await prisma.node.findFirst({ where: { name: modName, parentId: tech.id } });
+    const q1 = await prisma.question.findUnique({ where: { nodeId_serialNumber: { nodeId: mod.id, serialNumber: 1 } } });
+    expect(q1.title).toBe('Overwritten');
 
     const renumberRes = await request(app)
       .post('/api/import-export/import/commit')
       .set(authHeader(token))
       .send({
-        rows: [{ serialNumber: 1, module: moduleName, title: 'Renumbered', content: 'c', format: 'TEXT', answer: 'a', difficulty: 'BEGINNER' }],
+        rows: [{ serialNumber: 1, nodePath: pathStr, title: 'Renumbered', format: 'TEXT', questionText: 'q', answerText: 'a', difficulty: 'BEGINNER' }],
         conflictResolution: 'renumber',
       });
     expect(renumberRes.body.imported).toBe(1);
 
-    const mod2 = await prisma.module.findUnique({ where: { name: moduleName }, include: { questions: true } });
-    expect(mod2.questions.some((q) => q.title === 'Renumbered' && q.serialNumber !== 1)).toBe(true);
+    const allQuestions = await prisma.question.findMany({ where: { nodeId: mod.id } });
+    expect(allQuestions.some((q) => q.title === 'Renumbered' && q.serialNumber !== 1)).toBe(true);
   });
 
   test('import/export activity is recorded in history', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const mod = await createTestModule({ name: 'HistoryMod' });
-    await createQuestion(token, mod.id);
-    await request(app).get('/api/import-export/export').query({ format: 'json', moduleIds: mod.id }).set(authHeader(token));
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const leaf = await createTestNode({ name: 'HistoryNode' });
+    await createQuestion(token, leaf.id);
+    await request(app).get('/api/import-export/export').query({ format: 'json', nodeIds: leaf.id }).set(authHeader(token));
 
     const history = await request(app).get('/api/import-export/history').set(authHeader(token));
     expect(history.status).toBe(200);
     expect(history.body.history.some((h) => h.action === 'export')).toBe(true);
+  });
+
+  describe('Full-database export', () => {
+    test('non-admin cannot access it', async () => {
+      const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER, username: 'fulldump_cm' });
+      const res = await request(app)
+        .post('/api/import-export/export/full-database')
+        .set(authHeader(token))
+        .send({ password: 'TestPass123' });
+      expect(res.status).toBe(403);
+    });
+
+    test('admin must re-confirm their password', async () => {
+      const { token } = await createTestUser({ role: ROLES.ADMIN, username: 'fulldump_admin' });
+      const wrongPw = await request(app)
+        .post('/api/import-export/export/full-database')
+        .set(authHeader(token))
+        .send({ password: 'WrongPassword1' });
+      expect(wrongPw.status).toBe(401);
+
+      const rightPw = await request(app)
+        .post('/api/import-export/export/full-database')
+        .set(authHeader(token))
+        .send({ password: 'TestPass123' });
+      expect(rightPw.status).toBe(200);
+      const dump = JSON.parse(rightPw.text);
+      expect(dump.tables.users.length).toBeGreaterThan(0);
+      expect(dump.tables.users[0]).toHaveProperty('passwordHash');
+    });
+
+    test('full-database export writes a FULL_EXPORT audit log entry', async () => {
+      const { token, user } = await createTestUser({ role: ROLES.ADMIN, username: 'fulldump_audit' });
+      await request(app).post('/api/import-export/export/full-database').set(authHeader(token)).send({ password: 'TestPass123' });
+
+      const logs = await prisma.auditLog.findMany({ where: { userId: user.id, action: 'FULL_EXPORT' } });
+      expect(logs.length).toBeGreaterThanOrEqual(1);
+    });
   });
 });

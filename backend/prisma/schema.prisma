@@ -13,93 +13,111 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Role: REGULAR_USER | WRITER | ADMIN
+// Role: REGULAR_USER | CONTENT_MANAGER | ADMIN
 // QuestionFormat: TEXT | CODE | BOTH
 // Difficulty: BEGINNER | INTERMEDIATE | ADVANCED
-// AuditAction: LOGIN | LOGIN_FAILED | LOGOUT | CREATE | EDIT | DELETE | IMPORT | EXPORT | ROLE_CHANGE | PASSWORD_RESET | ACCOUNT_DEACTIVATED
-// AuditTargetType: USER | QUESTION | MODULE | PASSWORD_RESET | SESSION
+// AuditAction: LOGIN | LOGIN_FAILED | LOGOUT | CREATE | EDIT | DELETE | IMPORT | EXPORT | ROLE_CHANGE | PASSWORD_RESET | ACCOUNT_DEACTIVATED | FULL_EXPORT
+// AuditTargetType: USER | QUESTION | NODE | PASSWORD_RESET | SESSION | SETTINGS | COMMENT | DATABASE
 
 model User {
-  id                    String    @id @default(uuid())
-  username              String    @unique
-  email                 String?
-  passwordHash          String
-  role                  String    @default("REGULAR_USER")
-  bio                   String?
-  profileAvatarUrl      String?
-  isActive              Boolean   @default(true)
-  failedLoginAttempts   Int       @default(0)
-  accountLockedUntil    DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  lastLogin             DateTime?
+  id                     String    @id @default(uuid())
+  username               String    @unique
+  email                  String?
+  passwordHash           String
+  role                   String    @default("REGULAR_USER")
+  bio                    String?
+  profileAvatarUrl       String?
+  isActive               Boolean   @default(true)
+  failedLoginAttempts    Int       @default(0)
+  accountLockedUntil     DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  lastLogin              DateTime?
 
-  securityQuestions     SecurityQuestion[]
-  questions             Question[]           @relation("QuestionCreator")
-  questionVersions      QuestionVersion[]
-  favorites             Favorite[]
-  auditLogs             AuditLog[]
-  importsExports        ImportExport[]
-  modulesCreated        Module[]
-  sessions              Session[]
-  comments              Comment[]
-  savedSearches         SavedSearch[]
-  notifications         Notification[]        @relation("NotificationRecipient")
-  triggeredNotifications Notification[]        @relation("NotificationActor")
+  // Single security question (one per user). `securityQuestion` holds the
+  // literal question text — either copied from a SecurityQuestionTemplate
+  // at the time of selection, or a user-authored custom question.
+  securityQuestion       String?
+  securityAnswerHash     String?
+
+  questions              Question[]     @relation("QuestionCreator")
+  questionVersions       QuestionVersion[]
+  favorites              Favorite[]
+  auditLogs              AuditLog[]
+  importsExports         ImportExport[]
+  nodesCreated           Node[]
+  sessions               Session[]
+  comments               Comment[]
+  savedSearches          SavedSearch[]
+  notifications          Notification[] @relation("NotificationRecipient")
+  triggeredNotifications Notification[] @relation("NotificationActor")
 
   @@index([role])
 }
 
-model SecurityQuestion {
-  id           String @id @default(uuid())
-  userId       String
-  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question     String
-  answerHash   String
-
-  @@index([userId])
+// A predefined, admin-manageable pool of security questions offered at
+// registration. Users may instead write their own ("Custom Question").
+model SecurityQuestionTemplate {
+  id        String   @id @default(uuid())
+  question  String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
 
-model Module {
-  id             String     @id @default(uuid())
-  name           String     @unique
-  description    String?
-  createdById    String?
-  createdBy      User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
-  isArchived     Boolean    @default(false)
-  nextSerial     Int        @default(1)
+// Self-referential, unlimited-depth hierarchy: Technology -> Submodule ->
+// Child module -> ... Top-level nodes have parentId = null. Sibling-name
+// uniqueness (including among top-level nodes) is enforced at the
+// application layer, not the DB — SQLite treats NULL parentId values as
+// mutually distinct in a unique index, so a DB constraint alone can't catch
+// duplicate top-level technology names.
+model Node {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  parentId    String?
+  parent      Node?    @relation("NodeHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Node[]   @relation("NodeHierarchy")
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isArchived  Boolean  @default(false)
+  nextSerial  Int      @default(1) // serial-number counter for questions attached directly to this node
 
-  questions      Question[]
+  questions   Question[]
 
+  @@index([parentId])
   @@index([isArchived])
 }
 
 model Question {
-  id            String           @id @default(uuid())
-  moduleId      String
-  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  nodeId        String
+  node          Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
   serialNumber  Int
   title         String
-  content       String
-  format        String           @default("TEXT")
+  // Format-driven content: TEXT shows questionText only; CODE shows
+  // questionCode only; BOTH shows both. Same split applies to the answer.
+  questionText  String?
+  questionCode  String?
+  answerText    String?
+  answerCode    String?
+  format        String   @default("TEXT")
   codeLanguage  String?
-  answer        String
-  difficulty    String           @default("BEGINNER")
-  tags          String           @default("[]") // JSON-encoded string array (SQLite has no native array type)
+  difficulty    String   @default("BEGINNER")
+  tags          String   @default("[]") // JSON-encoded string array (SQLite has no native array type)
   createdById   String?
-  createdBy     User?            @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  viewCount     Int              @default(0)
+  createdBy     User?    @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  viewCount     Int      @default(0)
 
   versions      QuestionVersion[]
   favorites     Favorite[]
   comments      Comment[]
 
-  @@unique([moduleId, serialNumber])
-  @@index([moduleId])
+  @@unique([nodeId, serialNumber])
+  @@index([nodeId])
   @@index([difficulty])
   @@index([format])
 }
@@ -130,19 +148,19 @@ model SavedSearch {
   @@index([userId])
 }
 
-// NotificationType: QUESTION_EDITED | QUESTION_DELETED | ROLE_CHANGED | ACCOUNT_DEACTIVATED
+// NotificationType: QUESTION_EDITED | QUESTION_DELETED | ROLE_CHANGED | NEW_COMMENT
 model Notification {
-  id             String    @id @default(uuid())
-  userId         String
-  user           User      @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
-  actorId        String?
-  actor          User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
-  type           String
-  message        String
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actorId           String?
+  actor             User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  type              String
+  message           String
   relatedQuestionId String?
-  relatedModuleId   String?
-  isRead         Boolean   @default(false)
-  createdAt      DateTime  @default(now())
+  relatedNodeId     String?
+  isRead            Boolean  @default(false)
+  createdAt         DateTime @default(now())
 
   @@index([userId])
   @@index([userId, isRead])
@@ -163,15 +181,15 @@ model Settings {
 }
 
 model QuestionVersion {
-  id               String   @id @default(uuid())
-  questionId       String
-  question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  versionNumber    Int
-  previousContent  String   // JSON snapshot of the question before this change
-  changedById      String?
-  changedBy        User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
+  id                String   @id @default(uuid())
+  questionId        String
+  question          Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  versionNumber     Int
+  previousContent   String   // JSON snapshot of the question before this change
+  changedById       String?
+  changedBy         User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
   changeDescription String?
-  changedAt        DateTime @default(now())
+  changedAt         DateTime @default(now())
 
   @@index([questionId])
 }
@@ -206,17 +224,17 @@ model AuditLog {
 }
 
 model ImportExport {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action          String   // import | export
-  fileName        String
-  fileFormat      String   // json | csv | xlsx | pdf | xml
-  recordCount     Int      @default(0)
-  modulesIncluded String   @default("[]") // JSON-encoded array of module names
-  status          String   // success | failed | partial
-  errorDetails    String?
-  createdAt       DateTime @default(now())
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action        String   // import | export
+  fileName      String
+  fileFormat    String   // json | csv | xlsx | pdf | md | xml
+  recordCount   Int      @default(0)
+  nodesIncluded String   @default("[]") // JSON-encoded array of node names/paths, or "ALL" for full-DB export
+  status        String   // success | failed | partial
+  errorDetails  String?
+  createdAt     DateTime @default(now())
 
   @@index([userId])
 }

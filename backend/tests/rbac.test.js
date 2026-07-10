@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { buildApp, createTestUser, authHeader, createTestModule, prisma } = require('./helpers');
+const { buildApp, createTestUser, authHeader, createTestNode, prisma } = require('./helpers');
 const { ROLES } = require('../src/utils/enums');
 
 const app = buildApp();
@@ -9,68 +9,66 @@ afterAll(async () => {
 });
 
 describe('RBAC enforcement', () => {
-  test('regular user cannot create a module', async () => {
+  test('regular user cannot create a node', async () => {
     const { token } = await createTestUser({ role: ROLES.REGULAR_USER });
-    const res = await request(app).post('/api/modules').set(authHeader(token)).send({ name: 'RBAC Mod 1' });
+    const res = await request(app).post('/api/nodes').set(authHeader(token)).send({ name: 'RBAC Tech 1' });
     expect(res.status).toBe(403);
   });
 
-  test('writer can create a module', async () => {
-    const { token } = await createTestUser({ role: ROLES.WRITER });
-    const res = await request(app).post('/api/modules').set(authHeader(token)).send({ name: 'RBAC Mod 2' });
+  test('content manager can create a node', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const res = await request(app).post('/api/nodes').set(authHeader(token)).send({ name: 'RBAC Tech 2' });
     expect(res.status).toBe(201);
   });
 
-  test('regular user can view modules and questions (read-only)', async () => {
+  test('regular user can view nodes and questions (read-only)', async () => {
     const { token } = await createTestUser({ role: ROLES.REGULAR_USER });
-    const res = await request(app).get('/api/modules').set(authHeader(token));
+    const res = await request(app).get('/api/nodes').set(authHeader(token));
     expect(res.status).toBe(200);
   });
 
   test('regular user cannot create a question', async () => {
-    const mod = await createTestModule();
+    const node = await createTestNode();
     const { token } = await createTestUser({ role: ROLES.REGULAR_USER });
     const res = await request(app)
       .post('/api/questions')
       .set(authHeader(token))
       .send({
-        moduleId: mod.id,
+        nodeId: node.id,
         title: 'Q1',
-        content: 'What is an incident?',
         format: 'TEXT',
-        answer: 'A disruption.',
+        questionText: 'What is an incident?',
+        answerText: 'A disruption.',
         difficulty: 'BEGINNER',
       });
     expect(res.status).toBe(403);
   });
 
-  test('writer has full delete rights over questions created by others (per resolved spec conflict)', async () => {
-    const mod = await createTestModule();
-    const { token: writerAToken } = await createTestUser({ role: ROLES.WRITER });
-    const { token: writerBToken } = await createTestUser({ role: ROLES.WRITER });
+  test('content manager has full delete rights over questions created by other content managers', async () => {
+    const node = await createTestNode();
+    const { token: cmAToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const { token: cmBToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
 
     const create = await request(app)
       .post('/api/questions')
-      .set(authHeader(writerAToken))
+      .set(authHeader(cmAToken))
       .send({
-        moduleId: mod.id,
+        nodeId: node.id,
         title: 'Owned by A',
-        content: 'content',
         format: 'TEXT',
-        answer: 'answer',
+        questionText: 'text',
+        answerText: 'answer',
         difficulty: 'BEGINNER',
       });
     expect(create.status).toBe(201);
 
-    const del = await request(app)
-      .delete(`/api/questions/${create.body.question.id}`)
-      .set(authHeader(writerBToken));
+    const del = await request(app).delete(`/api/questions/${create.body.question.id}`).set(authHeader(cmBToken));
     expect(del.status).toBe(204);
   });
 
   test('only admin can access user management', async () => {
-    const { token: writerToken } = await createTestUser({ role: ROLES.WRITER });
-    const res = await request(app).get('/api/users').set(authHeader(writerToken));
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const res = await request(app).get('/api/users').set(authHeader(cmToken));
     expect(res.status).toBe(403);
 
     const { token: adminToken } = await createTestUser({ role: ROLES.ADMIN });
@@ -78,22 +76,36 @@ describe('RBAC enforcement', () => {
     expect(res2.status).toBe(200);
   });
 
+  test('content manager cannot manage users, reset passwords, or access admin settings', async () => {
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const { user: target } = await createTestUser({ role: ROLES.REGULAR_USER });
+
+    const roleChange = await request(app).patch(`/api/users/${target.id}/role`).set(authHeader(cmToken)).send({ role: ROLES.CONTENT_MANAGER });
+    expect(roleChange.status).toBe(403);
+
+    const resetPw = await request(app).post(`/api/users/${target.id}/reset-password`).set(authHeader(cmToken)).send({ newPassword: 'NewPass123' });
+    expect(resetPw.status).toBe(403);
+
+    const settingsRes = await request(app).get('/api/settings').set(authHeader(cmToken));
+    expect(settingsRes.status).toBe(403);
+  });
+
   test('only admin can access audit logs', async () => {
-    const { token: writerToken } = await createTestUser({ role: ROLES.WRITER });
-    const res = await request(app).get('/api/audit-logs').set(authHeader(writerToken));
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const res = await request(app).get('/api/audit-logs').set(authHeader(cmToken));
     expect(res.status).toBe(403);
   });
 
-  test('admin can grant and revoke writer access', async () => {
+  test('admin can grant and revoke content manager access', async () => {
     const { token: adminToken } = await createTestUser({ role: ROLES.ADMIN });
     const { user: target } = await createTestUser({ role: ROLES.REGULAR_USER });
 
     const grant = await request(app)
       .patch(`/api/users/${target.id}/role`)
       .set(authHeader(adminToken))
-      .send({ role: ROLES.WRITER });
+      .send({ role: ROLES.CONTENT_MANAGER });
     expect(grant.status).toBe(200);
-    expect(grant.body.user.role).toBe(ROLES.WRITER);
+    expect(grant.body.user.role).toBe(ROLES.CONTENT_MANAGER);
 
     const revoke = await request(app)
       .patch(`/api/users/${target.id}/role`)

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useAuth, isAdmin } from '../context/AuthContext';
+import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import NotificationBell from './NotificationBell';
 
@@ -12,8 +12,8 @@ export default function Header({ onMenuClick }) {
       <button className="md:hidden text-xl" onClick={onMenuClick} aria-label="Open menu">
         ☰
       </button>
-      <Link to="/" className="font-semibold text-sm md:text-base">
-        ServiceNow Interview Questions
+      <Link to="/" className="font-semibold text-sm md:text-base flex items-center gap-1.5">
+        <span aria-hidden>🧠</span> TechPrep Hub
       </Link>
       <div className="flex-1" />
       <button
@@ -24,9 +24,9 @@ export default function Header({ onMenuClick }) {
         {dark ? '☀️' : '🌙'}
       </button>
       <NotificationBell />
-      {isAdmin(user) && (
+      {isContentManagerOrAdmin(user) && (
         <Link to="/admin" className="text-sm text-brand-600 hover:underline hidden sm:inline">
-          Admin
+          {isAdmin(user) ? 'Admin' : 'Manage'}
         </Link>
       )}
       <Link to="/profile" className="text-sm hover:underline hidden sm:inline">

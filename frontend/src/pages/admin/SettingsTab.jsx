@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import SecurityQuestionsPanel from './SecurityQuestionsPanel';
 
 export default function SettingsTab() {
   const [settings, setSettings] = useState(null);
@@ -9,10 +10,13 @@ export default function SettingsTab() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get('/settings').then((res) => {
-      setSettings(res.settings);
-      setForm(res.settings);
-    });
+    api
+      .get('/settings')
+      .then((res) => {
+        setSettings(res.settings);
+        setForm(res.settings);
+      })
+      .catch((err) => setError(err.message));
   }, []);
 
   const update = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -45,7 +49,8 @@ export default function SettingsTab() {
   if (!settings || !form) return <p className="text-sm text-gray-500">Loading…</p>;
 
   return (
-    <form onSubmit={save} className="max-w-xl space-y-6">
+    <div className="max-w-xl space-y-6">
+      <form onSubmit={save} className="space-y-6">
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4">
         <h3 className="font-semibold text-sm">Password Policy</h3>
         <div className="grid grid-cols-2 gap-4">
@@ -141,6 +146,9 @@ export default function SettingsTab() {
       >
         {saving ? 'Saving…' : 'Save Settings'}
       </button>
-    </form>
+      </form>
+
+      <SecurityQuestionsPanel />
+    </div>
   );
 }

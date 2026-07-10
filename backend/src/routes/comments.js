@@ -58,7 +58,7 @@ router.post('/questions/:questionId/comments', async (req, res, next) => {
         type: NOTIFICATION_TYPES.NEW_COMMENT,
         message: `${req.user.username} commented on your question "${question.title}".`,
         relatedQuestionId: question.id,
-        relatedModuleId: question.moduleId,
+        relatedNodeId: question.nodeId,
       });
     }
 

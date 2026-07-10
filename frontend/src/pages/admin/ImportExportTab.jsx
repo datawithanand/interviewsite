@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react';
 import { api, getStoredToken } from '../../api/client';
+import { useAuth, isAdmin } from '../../context/AuthContext';
+import PasswordInput from '../../components/PasswordInput';
+
+async function downloadFromApi(path, defaultFilename) {
+  const token = getStoredToken();
+  const res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Download failed.');
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const disposition = res.headers.get('content-disposition') || '';
+  const match = disposition.match(/filename="(.+)"/);
+  a.download = match ? match[1] : defaultFilename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 export default function ImportExportTab() {
-  const [modules, setModules] = useState([]);
-  const [selectedModules, setSelectedModules] = useState([]);
+  const { user } = useAuth();
+  const admin = isAdmin(user);
+
+  const [nodes, setNodes] = useState([]);
+  const [selectedNodes, setSelectedNodes] = useState([]);
   const [format, setFormat] = useState('json');
   const [history, setHistory] = useState([]);
 
@@ -13,39 +38,30 @@ export default function ImportExportTab() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
+  const [fullExportOpen, setFullExportOpen] = useState(false);
+  const [fullExportPassword, setFullExportPassword] = useState('');
+  const [fullExportError, setFullExportError] = useState('');
+  const [fullExportBusy, setFullExportBusy] = useState(false);
+
   useEffect(() => {
-    api.get('/modules').then((res) => setModules(res.modules));
+    api.get('/nodes').then((res) => setNodes(res.nodes)).catch(() => {});
     loadHistory();
   }, []);
 
   const loadHistory = () => {
-    api.get('/import-export/history').then((res) => setHistory(res.history));
+    api.get('/import-export/history').then((res) => setHistory(res.history)).catch(() => {});
   };
 
   const doExport = async () => {
+    setError('');
     const params = new URLSearchParams({ format });
-    if (selectedModules.length) params.set('moduleIds', selectedModules.join(','));
-    const token = getStoredToken();
-    const res = await fetch(`/api/import-export/export?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || 'Export failed.');
-      return;
+    if (selectedNodes.length) params.set('nodeIds', selectedNodes.join(','));
+    try {
+      await downloadFromApi(`/import-export/export?${params.toString()}`, `export.${format}`);
+      loadHistory();
+    } catch (err) {
+      setError(err.message);
     }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const disposition = res.headers.get('content-disposition') || '';
-    const match = disposition.match(/filename="(.+)"/);
-    a.download = match ? match[1] : `export.${format}`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    loadHistory();
   };
 
   const doPreview = async () => {
@@ -83,6 +99,40 @@ export default function ImportExportTab() {
     }
   };
 
+  const doFullExport = async (e) => {
+    e.preventDefault();
+    setFullExportError('');
+    setFullExportBusy(true);
+    try {
+      const token = getStoredToken();
+      const res = await fetch('/api/import-export/export/full-database', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ password: fullExportPassword }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Full export failed.');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `full-database-export-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setFullExportOpen(false);
+      setFullExportPassword('');
+      loadHistory();
+    } catch (err) {
+      setFullExportError(err.message);
+    } finally {
+      setFullExportBusy(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <section>
@@ -96,26 +146,28 @@ export default function ImportExportTab() {
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
             <option value="xlsx">Excel (.xlsx)</option>
+            <option value="md">Markdown</option>
             <option value="xml">XML</option>
             <option value="pdf">PDF</option>
           </select>
           <select
             multiple
-            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm min-w-[200px] h-9"
-            value={selectedModules}
-            onChange={(e) => setSelectedModules(Array.from(e.target.selectedOptions, (o) => o.value))}
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm min-w-[220px] h-9"
+            value={selectedNodes}
+            onChange={(e) => setSelectedNodes(Array.from(e.target.selectedOptions, (o) => o.value))}
           >
-            {modules.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
+            {nodes.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
               </option>
             ))}
           </select>
-          <span className="text-xs text-gray-400">(leave empty for all modules)</span>
+          <span className="text-xs text-gray-400">(leave empty for everything; selecting a node includes its whole subtree)</span>
           <button onClick={doExport} className="ml-auto bg-brand-600 hover:bg-brand-700 text-white rounded-lg px-3 py-1.5 text-sm">
             Export
           </button>
         </div>
+        {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
       </section>
 
       <section>
@@ -131,8 +183,6 @@ export default function ImportExportTab() {
           <button onClick={doPreview} className="bg-gray-800 hover:bg-gray-900 text-white rounded-lg px-3 py-1.5 text-sm">
             Preview Import
           </button>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
 
           {preview && (
             <div className="space-y-2">
@@ -179,6 +229,37 @@ export default function ImportExportTab() {
         </div>
       </section>
 
+      {admin && (
+        <section>
+          <h3 className="font-semibold mb-2">Full Database Export</h3>
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 space-y-3">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠️ This downloads <strong>every</strong> table — including user accounts and password hashes. Handle the
+              file like a credential. Every use is recorded in the audit log.
+            </p>
+            {!fullExportOpen ? (
+              <button onClick={() => setFullExportOpen(true)} className="bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg px-3 py-1.5 text-sm">
+                Export Full Database…
+              </button>
+            ) : (
+              <form onSubmit={doFullExport} className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[220px]">
+                  <label className="block text-xs font-medium mb-1">Confirm your password</label>
+                  <PasswordInput value={fullExportPassword} onChange={(e) => setFullExportPassword(e.target.value)} required />
+                </div>
+                <button type="submit" disabled={fullExportBusy} className="bg-yellow-600 hover:bg-yellow-700 disabled:opacity-60 text-white rounded-lg px-3 py-2 text-sm">
+                  {fullExportBusy ? 'Exporting…' : 'Confirm & Download'}
+                </button>
+                <button type="button" onClick={() => setFullExportOpen(false)} className="px-3 py-2 text-sm rounded-lg bg-gray-100 dark:bg-gray-700">
+                  Cancel
+                </button>
+              </form>
+            )}
+            {fullExportError && <p className="text-sm text-red-600">{fullExportError}</p>}
+          </div>
+        </section>
+      )}
+
       <section>
         <h3 className="font-semibold mb-2">History</h3>
         <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -194,6 +275,13 @@ export default function ImportExportTab() {
               </tr>
             </thead>
             <tbody>
+              {history.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-4 text-center text-xs text-gray-400">
+                    No import/export activity yet.
+                  </td>
+                </tr>
+              )}
               {history.map((h) => (
                 <tr key={h.id} className="border-t border-gray-100 dark:border-gray-700">
                   <td className="px-3 py-2 capitalize">{h.action}</td>

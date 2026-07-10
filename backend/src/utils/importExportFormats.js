@@ -5,14 +5,18 @@ const { create } = require('xmlbuilder2');
 const { xml2js } = require('xml-js');
 const PDFDocument = require('pdfkit');
 
+const PATH_SEPARATOR = ' > ';
+
 const FIELD_ORDER = [
   'serialNumber',
-  'module',
+  'nodePath',
   'title',
-  'content',
   'format',
   'codeLanguage',
-  'answer',
+  'questionText',
+  'questionCode',
+  'answerText',
+  'answerCode',
   'difficulty',
   'tags',
 ];
@@ -32,15 +36,17 @@ function sanitizeForSpreadsheet(row) {
   return sanitized;
 }
 
-function questionToRow(q, moduleName) {
+function questionToRow(q, nodePath) {
   return {
     serialNumber: q.serialNumber,
-    module: moduleName,
+    nodePath,
     title: q.title,
-    content: q.content,
     format: q.format,
     codeLanguage: q.codeLanguage || '',
-    answer: q.answer,
+    questionText: q.questionText || '',
+    questionCode: q.questionCode || '',
+    answerText: q.answerText || '',
+    answerCode: q.answerCode || '',
     difficulty: q.difficulty,
     tags: JSON.parse(q.tags || '[]').join('|'),
   };
@@ -48,13 +54,13 @@ function questionToRow(q, moduleName) {
 
 // ---------- JSON ----------
 
-function toJson(questionsByModule) {
+function toJson(questionsByPath) {
   return JSON.stringify(
     {
       exportedAt: new Date().toISOString(),
-      modules: Object.entries(questionsByModule).map(([moduleName, questions]) => ({
-        module: moduleName,
-        questions: questions.map((q) => questionToRow(q, moduleName)),
+      nodes: Object.entries(questionsByPath).map(([nodePath, questions]) => ({
+        nodePath,
+        questions: questions.map((q) => questionToRow(q, nodePath)),
       })),
     },
     null,
@@ -65,10 +71,11 @@ function toJson(questionsByModule) {
 function fromJson(buffer) {
   const parsed = JSON.parse(buffer.toString('utf-8'));
   const rows = [];
-  const modules = parsed.modules || parsed;
-  for (const entry of modules) {
+  const entries = parsed.nodes || parsed.modules || parsed; // `modules` kept for backward-compat with older exports
+  for (const entry of entries) {
+    const nodePath = entry.nodePath || entry.module;
     for (const q of entry.questions || []) {
-      rows.push({ ...q, module: entry.module });
+      rows.push({ ...q, nodePath });
     }
   }
   return rows;
@@ -76,10 +83,10 @@ function fromJson(buffer) {
 
 // ---------- CSV ----------
 
-function toCsv(questionsByModule) {
+function toCsv(questionsByPath) {
   const rows = [];
-  for (const [moduleName, questions] of Object.entries(questionsByModule)) {
-    for (const q of questions) rows.push(sanitizeForSpreadsheet(questionToRow(q, moduleName)));
+  for (const [nodePath, questions] of Object.entries(questionsByPath)) {
+    for (const q of questions) rows.push(sanitizeForSpreadsheet(questionToRow(q, nodePath)));
   }
   return csvStringifySync(rows, { header: true, columns: FIELD_ORDER });
 }
@@ -88,17 +95,19 @@ function fromCsv(buffer) {
   return csvParseSync(buffer.toString('utf-8'), { columns: true, skip_empty_lines: true, trim: true });
 }
 
-// ---------- Excel (.xlsx) — one sheet per module ----------
+// ---------- Excel (.xlsx) — single sheet, nodePath as a column ----------
+// (Sharding into one sheet per node isn't practical once paths are
+// unlimited-depth: sheet names are capped at 31 chars and there's no bound
+// on how many distinct paths an export might touch.)
 
-async function toXlsx(questionsByModule) {
+async function toXlsx(questionsByPath) {
   const workbook = new ExcelJS.Workbook();
-  for (const [moduleName, questions] of Object.entries(questionsByModule)) {
-    const sheet = workbook.addWorksheet(moduleName.slice(0, 31) || 'Module');
-    sheet.columns = FIELD_ORDER.map((key) => ({ header: key, key, width: 24 }));
-    sheet.getRow(1).font = { bold: true };
-    questions.forEach((q) => sheet.addRow(sanitizeForSpreadsheet(questionToRow(q, moduleName))));
+  const sheet = workbook.addWorksheet('Questions');
+  sheet.columns = FIELD_ORDER.map((key) => ({ header: key, key, width: 24 }));
+  sheet.getRow(1).font = { bold: true };
+  for (const [nodePath, questions] of Object.entries(questionsByPath)) {
+    questions.forEach((q) => sheet.addRow(sanitizeForSpreadsheet(questionToRow(q, nodePath))));
   }
-  if (workbook.worksheets.length === 0) workbook.addWorksheet('Empty');
   return workbook.xlsx.writeBuffer();
 }
 
@@ -126,7 +135,6 @@ async function fromXlsx(buffer) {
       headers.forEach((h, idx) => {
         obj[h] = cellToString(values[idx]);
       });
-      if (!obj.module) obj.module = sheet.name;
       rows.push(obj);
     });
   });
@@ -135,11 +143,11 @@ async function fromXlsx(buffer) {
 
 // ---------- XML ----------
 
-function toXml(questionsByModule) {
+function toXml(questionsByPath) {
   const root = create({ version: '1.0', encoding: 'UTF-8' }).ele('questions');
-  for (const [moduleName, questions] of Object.entries(questionsByModule)) {
+  for (const [nodePath, questions] of Object.entries(questionsByPath)) {
     for (const q of questions) {
-      const row = questionToRow(q, moduleName);
+      const row = questionToRow(q, nodePath);
       const el = root.ele('question');
       for (const key of FIELD_ORDER) el.ele(key).txt(String(row[key] ?? '')).up();
       el.up();
@@ -161,9 +169,32 @@ function fromXml(buffer) {
   });
 }
 
+// ---------- Markdown (export only) ----------
+
+function toMarkdown(questionsByPath) {
+  const lines = ['# Question Export', ''];
+  for (const [nodePath, questions] of Object.entries(questionsByPath)) {
+    lines.push(`## ${nodePath}`, '');
+    for (const q of questions) {
+      lines.push(`### #${q.serialNumber} ${q.title} _(${q.difficulty})_`, '');
+      if (q.questionText) lines.push(q.questionText, '');
+      if (q.questionCode) lines.push('```' + (q.codeLanguage || ''), q.questionCode, '```', '');
+      lines.push('**Answer:**', '');
+      if (q.answerText) lines.push(q.answerText, '');
+      if (q.answerCode) lines.push('```' + (q.codeLanguage || ''), q.answerCode, '```', '');
+      if (q.tags) {
+        const tags = JSON.parse(q.tags || '[]');
+        if (tags.length) lines.push(`Tags: ${tags.map((t) => `\`${t}\``).join(', ')}`, '');
+      }
+      lines.push('---', '');
+    }
+  }
+  return lines.join('\n');
+}
+
 // ---------- PDF (export only) ----------
 
-function toPdf(questionsByModule) {
+function toPdf(questionsByPath) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 40 });
     const chunks = [];
@@ -171,17 +202,26 @@ function toPdf(questionsByModule) {
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    doc.fontSize(20).text('ServiceNow Interview Questions', { align: 'center' });
+    doc.fontSize(20).text('Question Export', { align: 'center' });
     doc.moveDown();
 
-    for (const [moduleName, questions] of Object.entries(questionsByModule)) {
-      doc.addPage().fontSize(16).text(moduleName, { underline: true });
+    for (const [nodePath, questions] of Object.entries(questionsByPath)) {
+      doc.addPage().fontSize(16).text(nodePath, { underline: true });
       doc.moveDown(0.5);
       for (const q of questions) {
         doc.fontSize(12).font('Helvetica-Bold').text(`#${q.serialNumber} — ${q.title} [${q.difficulty}]`);
-        doc.font('Helvetica').fontSize(10).text(q.content || '');
-        if (q.codeLanguage) doc.fontSize(9).fillColor('gray').text(`Language: ${q.codeLanguage}`).fillColor('black');
-        doc.fontSize(10).text(`Answer: ${q.answer || ''}`);
+        doc.font('Helvetica').fontSize(10);
+        if (q.questionText) doc.text(q.questionText);
+        if (q.questionCode) {
+          doc.fontSize(9).fillColor('gray').text(`Question code (${q.codeLanguage || 'code'}):`).fillColor('black');
+          doc.fontSize(9).text(q.questionCode);
+        }
+        doc.fontSize(10).text('Answer:');
+        if (q.answerText) doc.text(q.answerText);
+        if (q.answerCode) {
+          doc.fontSize(9).fillColor('gray').text(`Answer code (${q.codeLanguage || 'code'}):`).fillColor('black');
+          doc.fontSize(9).text(q.answerCode);
+        }
         doc.moveDown(0.75);
       }
     }
@@ -192,12 +232,14 @@ function toPdf(questionsByModule) {
 function normalizeRow(row) {
   return {
     serialNumber: row.serialNumber ? Number(row.serialNumber) : undefined,
-    module: String(row.module || '').trim(),
+    nodePath: String(row.nodePath || row.module || '').trim(),
     title: String(row.title || '').trim(),
-    content: String(row.content || '').trim(),
     format: String(row.format || 'TEXT').trim().toUpperCase(),
     codeLanguage: row.codeLanguage ? String(row.codeLanguage).trim().toLowerCase() : null,
-    answer: String(row.answer || '').trim(),
+    questionText: row.questionText ? String(row.questionText).trim() : row.content ? String(row.content).trim() : '',
+    questionCode: row.questionCode ? String(row.questionCode) : '',
+    answerText: row.answerText ? String(row.answerText).trim() : row.answer ? String(row.answer).trim() : '',
+    answerCode: row.answerCode ? String(row.answerCode) : '',
     difficulty: String(row.difficulty || 'BEGINNER').trim().toUpperCase(),
     tags: row.tags
       ? String(row.tags)
@@ -209,6 +251,7 @@ function normalizeRow(row) {
 }
 
 module.exports = {
+  PATH_SEPARATOR,
   toJson,
   fromJson,
   toCsv,
@@ -217,6 +260,7 @@ module.exports = {
   fromXlsx,
   toXml,
   fromXml,
+  toMarkdown,
   toPdf,
   normalizeRow,
 };

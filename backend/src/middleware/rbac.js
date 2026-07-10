@@ -10,7 +10,7 @@ function requireRole(...allowedRoles) {
   };
 }
 
-const requireWriterOrAdmin = requireRole(ROLES.WRITER, ROLES.ADMIN);
+const requireContentManagerOrAdmin = requireRole(ROLES.CONTENT_MANAGER, ROLES.ADMIN);
 const requireAdmin = requireRole(ROLES.ADMIN);
 
-module.exports = { requireRole, requireWriterOrAdmin, requireAdmin };
+module.exports = { requireRole, requireContentManagerOrAdmin, requireAdmin };

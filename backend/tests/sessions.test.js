@@ -12,11 +12,7 @@ describe('Sessions', () => {
   const baseUser = {
     username: 'sessiontest_user',
     password: 'GoodPass123',
-    securityQuestions: [
-      { question: 'First pet?', answer: 'Rex' },
-      { question: 'Favorite food?', answer: 'Pizza' },
-      { question: 'Birth city?', answer: 'Gotham' },
-    ],
+    securityQuestion: { customQuestion: 'First pet?', answer: 'Rex' },
   };
 
   test('login creates a session, and it appears in the sessions list', async () => {
@@ -89,12 +85,10 @@ describe('Sessions', () => {
     await request(app).post('/api/auth/register').send({ ...baseUser, username });
     const login = await request(app).post('/api/auth/login').send({ username, password: baseUser.password });
 
-    const start = await request(app).post('/api/auth/forgot-password/start').send({ username });
-    const answerMap = new Map(baseUser.securityQuestions.map((q) => [q.question, q.answer]));
-    const answers = start.body.questions.map((q) => ({ id: q.id, answer: answerMap.get(q.question) }));
+    await request(app).post('/api/auth/forgot-password/start').send({ username });
     await request(app)
       .post('/api/auth/forgot-password/verify')
-      .send({ username, answers, newPassword: 'BrandNewPass123' });
+      .send({ username, answer: baseUser.securityQuestion.answer, newPassword: 'BrandNewPass123' });
 
     const me = await request(app).get('/api/auth/me').set(authHeader(login.body.token));
     expect(me.status).toBe(401);
