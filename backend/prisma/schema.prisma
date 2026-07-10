@@ -18,29 +18,33 @@ datasource db {
 // Difficulty: BEGINNER | INTERMEDIATE | ADVANCED
 // AuditAction: LOGIN | LOGIN_FAILED | LOGOUT | CREATE | EDIT | DELETE | IMPORT | EXPORT | ROLE_CHANGE | PASSWORD_RESET | ACCOUNT_DEACTIVATED | FULL_EXPORT
 // AuditTargetType: USER | QUESTION | NODE | PASSWORD_RESET | SESSION | SETTINGS | COMMENT | DATABASE
+// ProgressStatus: NEW | LEARNING | REVIEWING | MASTERED
+// ReviewRating: AGAIN | HARD | GOOD | EASY
+// MockInterviewStatus: IN_PROGRESS | COMPLETED | ABANDONED
+// SelfRating: CORRECT | PARTIAL | INCORRECT | SKIPPED
 
 model User {
-  id                     String    @id @default(uuid())
-  username               String    @unique
-  email                  String?
-  passwordHash           String
-  role                   String    @default("REGULAR_USER")
-  bio                    String?
-  profileAvatarUrl       String?
-  isActive               Boolean   @default(true)
-  failedLoginAttempts    Int       @default(0)
-  accountLockedUntil     DateTime?
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
-  lastLogin              DateTime?
+  id                  String    @id @default(uuid())
+  username            String    @unique
+  email               String?
+  passwordHash        String
+  role                String    @default("REGULAR_USER")
+  bio                 String?
+  profileAvatarUrl    String?
+  isActive            Boolean   @default(true)
+  failedLoginAttempts Int       @default(0)
+  accountLockedUntil  DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  lastLogin           DateTime?
 
   // Single security question (one per user). `securityQuestion` holds the
   // literal question text — either copied from a SecurityQuestionTemplate
   // at the time of selection, or a user-authored custom question.
-  securityQuestion       String?
-  securityAnswerHash     String?
+  securityQuestion   String?
+  securityAnswerHash String?
 
-  questions              Question[]     @relation("QuestionCreator")
+  questions              Question[]         @relation("QuestionCreator")
   questionVersions       QuestionVersion[]
   favorites              Favorite[]
   auditLogs              AuditLog[]
@@ -49,8 +53,12 @@ model User {
   sessions               Session[]
   comments               Comment[]
   savedSearches          SavedSearch[]
-  notifications          Notification[] @relation("NotificationRecipient")
-  triggeredNotifications Notification[] @relation("NotificationActor")
+  notifications          Notification[]     @relation("NotificationRecipient")
+  triggeredNotifications Notification[]     @relation("NotificationActor")
+  questionProgress       QuestionProgress[]
+  gameStats              UserGameStats?
+  badges                 UserBadge[]
+  mockInterviews         MockInterview[]
 
   @@index([role])
 }
@@ -84,37 +92,39 @@ model Node {
   isArchived  Boolean  @default(false)
   nextSerial  Int      @default(1) // serial-number counter for questions attached directly to this node
 
-  questions   Question[]
+  questions Question[]
 
   @@index([parentId])
   @@index([isArchived])
 }
 
 model Question {
-  id            String   @id @default(uuid())
-  nodeId        String
-  node          Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
-  serialNumber  Int
-  title         String
+  id           String   @id @default(uuid())
+  nodeId       String
+  node         Node     @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  serialNumber Int
+  title        String
   // Format-driven content: TEXT shows questionText only; CODE shows
   // questionCode only; BOTH shows both. Same split applies to the answer.
-  questionText  String?
-  questionCode  String?
-  answerText    String?
-  answerCode    String?
-  format        String   @default("TEXT")
-  codeLanguage  String?
-  difficulty    String   @default("BEGINNER")
-  tags          String   @default("[]") // JSON-encoded string array (SQLite has no native array type)
-  createdById   String?
-  createdBy     User?    @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  viewCount     Int      @default(0)
+  questionText String?
+  questionCode String?
+  answerText   String?
+  answerCode   String?
+  format       String   @default("TEXT")
+  codeLanguage String?
+  difficulty   String   @default("BEGINNER")
+  tags         String   @default("[]") // JSON-encoded string array (SQLite has no native array type)
+  createdById  String?
+  createdBy    User?    @relation("QuestionCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  viewCount    Int      @default(0)
 
-  versions      QuestionVersion[]
-  favorites     Favorite[]
-  comments      Comment[]
+  versions    QuestionVersion[]
+  favorites   Favorite[]
+  comments    Comment[]
+  progress    QuestionProgress[]
+  mockAnswers MockInterviewAnswer[]
 
   @@unique([nodeId, serialNumber])
   @@index([nodeId])
@@ -141,7 +151,7 @@ model SavedSearch {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
-  filters   String   // JSON-encoded query params
+  filters   String // JSON-encoded query params
   createdAt DateTime @default(now())
 
   @@unique([userId, name])
@@ -185,7 +195,7 @@ model QuestionVersion {
   questionId        String
   question          Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   versionNumber     Int
-  previousContent   String   // JSON snapshot of the question before this change
+  previousContent   String // JSON snapshot of the question before this change
   changedById       String?
   changedBy         User?    @relation(fields: [changedById], references: [id], onDelete: SetNull)
   changeDescription String?
@@ -213,7 +223,7 @@ model AuditLog {
   action     String
   targetType String
   targetId   String?
-  details    String?  // JSON-encoded context
+  details    String? // JSON-encoded context
   ipAddress  String?
   timestamp  DateTime @default(now())
   status     String   @default("success") // success | failure
@@ -227,12 +237,12 @@ model ImportExport {
   id            String   @id @default(uuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  action        String   // import | export
+  action        String // import | export
   fileName      String
-  fileFormat    String   // json | csv | xlsx | pdf | md | xml
+  fileFormat    String // json | csv | xlsx | pdf | md | xml
   recordCount   Int      @default(0)
   nodesIncluded String   @default("[]") // JSON-encoded array of node names/paths, or "ALL" for full-DB export
-  status        String   // success | failed | partial
+  status        String // success | failed | partial
   errorDetails  String?
   createdAt     DateTime @default(now())
 
@@ -253,4 +263,96 @@ model Session {
 
   @@index([userId])
   @@index([tokenHash])
+}
+
+// Per-user, per-question spaced-repetition state (SM-2-lite). Reviewed via
+// the flashcard-style Practice flow; also updated from mock-interview
+// self-assessments (see MockInterviewAnswer).
+model QuestionProgress {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  status         String    @default("NEW")
+  easeFactor     Float     @default(2.5)
+  intervalDays   Float     @default(0)
+  repetitions    Int       @default(0)
+  correctStreak  Int       @default(0)
+  totalReviews   Int       @default(0)
+  totalCorrect   Int       @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([userId, questionId])
+  @@index([userId])
+  @@index([userId, nextReviewAt])
+  @@index([questionId])
+}
+
+// One row per user: XP, level, and daily-streak state that powers the
+// gamified Progress dashboard.
+model UserGameStats {
+  userId           String   @id
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp               Int      @default(0)
+  level            Int      @default(1)
+  currentStreak    Int      @default(0)
+  longestStreak    Int      @default(0)
+  lastActivityDate String? // "YYYY-MM-DD" (UTC) — the last day XP was earned, used to grow/reset the streak
+  updatedAt        DateTime @updatedAt
+}
+
+// Earned badges. The catalog of possible badges (name/description/icon/
+// criteria) lives in code (src/utils/badges.js) — this table only records
+// which badge codes a user has unlocked and when.
+model UserBadge {
+  id       String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code     String
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, code])
+  @@index([userId])
+}
+
+// A timed, self-assessed mock interview session drawn from a scope of
+// nodes (or the whole question bank).
+model MockInterview {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeScope       String    @default("[]") // JSON array of nodeIds the questions were drawn from; [] = entire bank
+  difficulty      String?
+  durationMinutes Int
+  questionIds     String // JSON-encoded ordered array of question ids
+  status          String    @default("IN_PROGRESS")
+  startedAt       DateTime  @default(now())
+  finishedAt      DateTime?
+  score           Int? // 0-100, weighted by self-rating
+  xpEarned        Int       @default(0)
+
+  answers MockInterviewAnswer[]
+
+  @@index([userId])
+  @@index([userId, status])
+}
+
+model MockInterviewAnswer {
+  id               String        @id @default(uuid())
+  sessionId        String
+  session          MockInterview @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question      @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  order            Int
+  timeSpentSeconds Int           @default(0)
+  selfRating       String?
+  answeredAt       DateTime?
+
+  @@unique([sessionId, questionId])
+  @@index([sessionId])
+  @@index([questionId])
 }

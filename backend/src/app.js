@@ -17,6 +17,8 @@ const securityQuestionTemplatesRoutes = require('./routes/securityQuestionTempla
 const notificationsRoutes = require('./routes/notifications');
 const commentsRoutes = require('./routes/comments');
 const savedSearchesRoutes = require('./routes/savedSearches');
+const progressRoutes = require('./routes/progress');
+const mockInterviewsRoutes = require('./routes/mockInterviews');
 
 function createApp() {
   const app = express();
@@ -52,6 +54,8 @@ function createApp() {
   app.use('/api/security-question-templates', securityQuestionTemplatesRoutes);
   app.use('/api/notifications', notificationsRoutes);
   app.use('/api/saved-searches', savedSearchesRoutes);
+  app.use('/api/progress', progressRoutes);
+  app.use('/api/mock-interviews', mockInterviewsRoutes);
   // comments routes are mounted at /api since they define their own
   // /questions/:questionId/comments and /comments/:id sub-paths.
   app.use('/api', commentsRoutes);

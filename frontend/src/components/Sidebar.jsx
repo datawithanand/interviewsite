@@ -12,6 +12,7 @@ export default function Sidebar({ open, onClose }) {
   const [addModalParent, setAddModalParent] = useState(undefined); // undefined = closed, null = top-level, node = child of node
   const [newName, setNewName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [dueCount, setDueCount] = useState(0);
 
   const canManage = isContentManagerOrAdmin(user);
 
@@ -21,6 +22,7 @@ export default function Sidebar({ open, onClose }) {
 
   useEffect(() => {
     loadNodes();
+    api.get('/progress/queue?limit=1').then((res) => setDueCount(res.dueCount)).catch(() => {});
   }, [loadNodes]);
 
   const childrenOf = useMemo(() => {
@@ -88,6 +90,48 @@ export default function Sidebar({ open, onClose }) {
         {error && <p className="text-xs text-red-600 px-3 pt-2">{error}</p>}
 
         <nav className="flex-1 overflow-y-auto py-2">
+          <div className="mx-2 mb-3 space-y-1">
+            <NavLink
+              to="/progress"
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${
+                  isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                }`
+              }
+            >
+              <span aria-hidden>📊</span> My Progress
+            </NavLink>
+            <NavLink
+              to="/practice"
+              className={({ isActive }) =>
+                `flex items-center justify-between rounded-lg px-3 py-1.5 text-sm ${
+                  isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                }`
+              }
+            >
+              <span className="flex items-center gap-2">
+                <span aria-hidden>🎯</span> Practice
+              </span>
+              {dueCount > 0 && (
+                <span className="text-[11px] font-semibold bg-brand-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                  {dueCount}
+                </span>
+              )}
+            </NavLink>
+            <NavLink
+              to="/mock-interview"
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${
+                  isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                }`
+              }
+            >
+              <span aria-hidden>🎤</span> Mock Interview
+            </NavLink>
+          </div>
+
+          <div className="mx-3 mb-2 border-t border-gray-200 dark:border-gray-700" />
+
           <NavLink
             to="/"
             end
