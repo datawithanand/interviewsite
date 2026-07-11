@@ -67,7 +67,7 @@ describe('Questions', () => {
     expect(res.status).toBe(400);
   });
 
-  test('CODE format requires questionCode, answerCode, and codeLanguage', async () => {
+  test('CODE format requires only questionCode and codeLanguage — no separate answer', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();
     const res = await createQuestion(token, node.id, {
@@ -75,12 +75,14 @@ describe('Questions', () => {
       questionText: undefined,
       answerText: undefined,
       questionCode: 'function f() {}',
-      answerCode: 'return 1;',
+      answerCode: 'return 1;', // ignored — CODE never stores a separate answer
       codeLanguage: 'javascript',
     });
     expect(res.status).toBe(201);
     expect(res.body.question.format).toBe('CODE');
     expect(res.body.question.questionText).toBeNull();
+    expect(res.body.question.answerText).toBeNull();
+    expect(res.body.question.answerCode).toBeNull();
   });
 
   test('CODE format rejects missing codeLanguage', async () => {
@@ -96,11 +98,11 @@ describe('Questions', () => {
     expect(res.status).toBe(400);
   });
 
-  test('BOTH format requires all four fields (questionText, questionCode, answerText, answerCode)', async () => {
+  test('BOTH format requires only questionText and questionCode — no separate answer', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();
 
-    const missingCode = await createQuestion(token, node.id, { format: 'BOTH', codeLanguage: 'python' });
+    const missingCode = await createQuestion(token, node.id, { format: 'BOTH', codeLanguage: 'python', questionCode: '' });
     expect(missingCode.status).toBe(400);
 
     const complete = await createQuestion(token, node.id, {
@@ -108,14 +110,14 @@ describe('Questions', () => {
       codeLanguage: 'python',
       questionText: 'Explain the algorithm',
       questionCode: 'def f(): pass',
-      answerText: 'It works like this',
+      answerText: 'It works like this', // ignored — BOTH never stores a separate answer
       answerCode: 'return 1',
     });
     expect(complete.status).toBe(201);
     expect(complete.body.question.questionText).toBe('Explain the algorithm');
     expect(complete.body.question.questionCode).toBe('def f(): pass');
-    expect(complete.body.question.answerText).toBe('It works like this');
-    expect(complete.body.question.answerCode).toBe('return 1');
+    expect(complete.body.question.answerText).toBeNull();
+    expect(complete.body.question.answerCode).toBeNull();
   });
 
   test('editing a question records a version snapshot', async () => {
@@ -135,7 +137,7 @@ describe('Questions', () => {
     expect(versions.body.versions[0].previousContent.title).toBe('Original title');
   });
 
-  test('editing to switch format enforces the new format\'s required fields', async () => {
+  test('editing to switch format enforces the new format\'s required fields and clears the unused answer', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();
     const created = await createQuestion(token, node.id);
@@ -143,15 +145,17 @@ describe('Questions', () => {
     const badSwitch = await request(app)
       .patch(`/api/questions/${created.body.question.id}`)
       .set(authHeader(token))
-      .send({ format: 'CODE' }); // no questionCode/answerCode/codeLanguage provided
+      .send({ format: 'CODE' }); // no questionCode/codeLanguage provided
     expect(badSwitch.status).toBe(400);
 
     const goodSwitch = await request(app)
       .patch(`/api/questions/${created.body.question.id}`)
       .set(authHeader(token))
-      .send({ format: 'CODE', questionCode: 'code', answerCode: 'code', codeLanguage: 'python' });
+      .send({ format: 'CODE', questionCode: 'code', codeLanguage: 'python' });
     expect(goodSwitch.status).toBe(200);
     expect(goodSwitch.body.question.questionText).toBeNull();
+    expect(goodSwitch.body.question.answerText).toBeNull();
+    expect(goodSwitch.body.question.answerCode).toBeNull();
   });
 
   test('duplicate creates a clone with a new serial number', async () => {

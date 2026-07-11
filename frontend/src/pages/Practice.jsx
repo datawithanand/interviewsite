@@ -42,10 +42,12 @@ export default function Practice() {
   useEffect(() => {
     function onKey(e) {
       if (!queue || index >= queue.length) return;
+      const current = queue[index];
+      const alreadyRevealed = revealed || current?.format !== 'TEXT';
       if (e.code === 'Space') {
         e.preventDefault();
         setRevealed((r) => !r);
-      } else if (revealed && ['1', '2', '3', '4'].includes(e.key)) {
+      } else if (alreadyRevealed && ['1', '2', '3', '4'].includes(e.key)) {
         const btn = RATING_BUTTONS[Number(e.key) - 1];
         if (btn) rate(btn.rating);
       }
@@ -77,6 +79,10 @@ export default function Practice() {
 
   const current = queue[index];
   const done = index >= queue.length;
+  // CODE/BOTH questions have no separate answer to hide, so there's
+  // nothing to reveal — go straight to the self-rating buttons.
+  const needsReveal = current?.format === 'TEXT';
+  const effectivelyRevealed = revealed || !needsReveal;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -116,9 +122,9 @@ export default function Practice() {
 
       {!done && current && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <QuestionCardBody question={current} showAnswer={revealed} />
+          <QuestionCardBody question={current} showAnswer={effectivelyRevealed} />
 
-          {!revealed ? (
+          {!effectivelyRevealed ? (
             <button
               onClick={() => setRevealed(true)}
               className="mt-6 w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg py-2.5 text-sm font-medium transition-colors"

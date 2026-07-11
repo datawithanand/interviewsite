@@ -10,7 +10,7 @@ export default function QuestionCardBody({ question, showAnswer }) {
       </div>
 
       <div>
-        <h4 className="text-sm font-semibold mb-1 text-gray-500 dark:text-gray-400">Question</h4>
+        {question.format === 'TEXT' && <h4 className="text-sm font-semibold mb-1 text-gray-500 dark:text-gray-400">Question</h4>}
         <p className="text-base font-medium mb-1">{question.title}</p>
         {question.questionText && <p className="text-sm whitespace-pre-wrap mb-2">{question.questionText}</p>}
         {question.questionCode && (
@@ -20,7 +20,9 @@ export default function QuestionCardBody({ question, showAnswer }) {
         )}
       </div>
 
-      {showAnswer && (
+      {/* Only TEXT questions have a separate Answer to reveal — CODE/BOTH
+          hold everything above, so callers skip the reveal step entirely. */}
+      {showAnswer && (question.answerText || question.answerCode) && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
           <h4 className="text-sm font-semibold mb-1 text-gray-500 dark:text-gray-400">Answer</h4>
           {question.answerText && <p className="text-sm whitespace-pre-wrap mb-2">{question.answerText}</p>}

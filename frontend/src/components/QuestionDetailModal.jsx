@@ -46,7 +46,7 @@ export default function QuestionDetailModal({ open, onClose, questionId }) {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold mb-1">Question</h4>
+            {question.format === 'TEXT' && <h4 className="text-sm font-semibold mb-1">Question</h4>}
             {question.questionText && <p className="text-sm whitespace-pre-wrap mb-2">{question.questionText}</p>}
             {question.questionCode && (
               <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
@@ -55,15 +55,19 @@ export default function QuestionDetailModal({ open, onClose, questionId }) {
             )}
           </div>
 
-          <div>
-            <h4 className="text-sm font-semibold mb-1">Answer</h4>
-            {question.answerText && <p className="text-sm whitespace-pre-wrap mb-2">{question.answerText}</p>}
-            {question.answerCode && (
-              <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
-                <code>{question.answerCode}</code>
-              </pre>
-            )}
-          </div>
+          {/* Only TEXT questions have a separate Answer — CODE/BOTH hold
+              everything above (no reveal-answer step for those formats). */}
+          {(question.answerText || question.answerCode) && (
+            <div>
+              <h4 className="text-sm font-semibold mb-1">Answer</h4>
+              {question.answerText && <p className="text-sm whitespace-pre-wrap mb-2">{question.answerText}</p>}
+              {question.answerCode && (
+                <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
+                  <code>{question.answerCode}</code>
+                </pre>
+              )}
+            </div>
+          )}
 
           {question.tags && question.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">

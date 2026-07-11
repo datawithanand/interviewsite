@@ -18,43 +18,35 @@ const emptyForm = {
   tags: '',
 };
 
-function TextOrCodeField({ format, textValue, codeValue, onTextChange, onCodeChange, codeLanguage, dark }) {
-  const showText = format !== 'CODE';
-  const showCode = format !== 'TEXT';
-  // Only label the two boxes individually when both appear together (BOTH
-  // format) — with just one box, the section header above already says
-  // "Question" / "Answer" and a plain textarea vs. a code editor is
-  // self-explanatory, so no extra label is needed.
-  const showSubLabels = showText && showCode;
+function CodeBox({ label, value, onChange, codeLanguage, dark }) {
   return (
-    <div className="space-y-3">
-      {showText && (
-        <div>
-          {showSubLabels && <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Text</label>}
-          <textarea
-            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
-            rows={4}
-            value={textValue}
-            onChange={(e) => onTextChange(e.target.value)}
-            required
-          />
-        </div>
-      )}
-      {showCode && (
-        <div>
-          {showSubLabels && <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Code</label>}
-          <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
-            <Editor
-              height="180px"
-              language={codeLanguage}
-              theme={dark ? 'vs-dark' : 'light'}
-              value={codeValue}
-              onChange={(v) => onCodeChange(v || '')}
-              options={{ minimap: { enabled: false }, fontSize: 13 }}
-            />
-          </div>
-        </div>
-      )}
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+        <Editor
+          height="180px"
+          language={codeLanguage}
+          theme={dark ? 'vs-dark' : 'light'}
+          value={value}
+          onChange={(v) => onChange(v || '')}
+          options={{ minimap: { enabled: false }, fontSize: 13 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TextBox({ label, value, onChange }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1">{label}</label>
+      <textarea
+        className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
+        rows={5}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+      />
     </div>
   );
 }
@@ -115,8 +107,11 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
           codeLanguage: form.format === 'TEXT' ? null : form.codeLanguage,
           questionText: form.format === 'CODE' ? null : form.questionText,
           questionCode: form.format === 'TEXT' ? null : form.questionCode,
-          answerText: form.format === 'CODE' ? null : form.answerText,
-          answerCode: form.format === 'TEXT' ? null : form.answerCode,
+          // Only TEXT has a separate Answer — CODE/BOTH hold everything in
+          // the Question fields above and skip the reveal-answer step in
+          // Practice/Mock Interview.
+          answerText: form.format === 'TEXT' ? form.answerText : null,
+          answerCode: null,
           difficulty: form.difficulty,
           tags: form.tags
             .split(',')
@@ -220,6 +215,11 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
                 </option>
               ))}
             </select>
+            {form.format !== 'TEXT' && (
+              <p className="text-xs text-gray-400 mt-1">
+                {form.format === 'CODE' ? 'One code box — no separate answer.' : 'One text box and one code box — no separate answer.'}
+              </p>
+            )}
           </div>
           {form.format !== 'TEXT' && (
             <div>
@@ -239,31 +239,35 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
           )}
         </div>
 
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-          <h4 className="text-sm font-semibold mb-2">Question</h4>
-          <TextOrCodeField
-            format={form.format}
-            textValue={form.questionText}
-            codeValue={form.questionCode}
-            onTextChange={(v) => setForm({ ...form, questionText: v })}
-            onCodeChange={(v) => setForm({ ...form, questionCode: v })}
-            codeLanguage={form.codeLanguage}
-            dark={dark}
-          />
-        </div>
+        {form.format === 'TEXT' && (
+          <>
+            <TextBox label="Question" value={form.questionText} onChange={(v) => setForm({ ...form, questionText: v })} />
+            <TextBox label="Answer" value={form.answerText} onChange={(v) => setForm({ ...form, answerText: v })} />
+          </>
+        )}
 
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-          <h4 className="text-sm font-semibold mb-2">Answer</h4>
-          <TextOrCodeField
-            format={form.format}
-            textValue={form.answerText}
-            codeValue={form.answerCode}
-            onTextChange={(v) => setForm({ ...form, answerText: v })}
-            onCodeChange={(v) => setForm({ ...form, answerCode: v })}
+        {form.format === 'CODE' && (
+          <CodeBox
+            label="Code"
+            value={form.questionCode}
+            onChange={(v) => setForm({ ...form, questionCode: v })}
             codeLanguage={form.codeLanguage}
             dark={dark}
           />
-        </div>
+        )}
+
+        {form.format === 'BOTH' && (
+          <>
+            <TextBox label="Text" value={form.questionText} onChange={(v) => setForm({ ...form, questionText: v })} />
+            <CodeBox
+              label="Code"
+              value={form.questionCode}
+              onChange={(v) => setForm({ ...form, questionCode: v })}
+              codeLanguage={form.codeLanguage}
+              dark={dark}
+            />
+          </>
+        )}
 
         <div>
           <label className="block text-sm font-medium mb-1">Tags (comma separated)</label>

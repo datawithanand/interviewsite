@@ -74,17 +74,20 @@ const nodeUpdateSchema = z.object({
   description: z.string().trim().max(1000).optional().nullable(),
 });
 
-// ---------- Questions (format-driven Text/Code fields, symmetric on Q and A) ----------
-
+// ---------- Questions (format-driven Text/Code fields) ----------
+// TEXT keeps a separate Question and Answer (used for the reveal-answer
+// flow in Practice/Mock Interview). CODE and BOTH intentionally have no
+// separate Answer — the single Code box (and, for BOTH, the Text box)
+// hold the whole thing; answerText/answerCode are never populated for
+// these formats and Practice/Mock Interview skip straight to self-rating.
 function hasRequiredFieldsForFormat(data) {
   const qt = (data.questionText || '').trim();
   const qc = (data.questionCode || '').trim();
   const at = (data.answerText || '').trim();
-  const ac = (data.answerCode || '').trim();
 
   if (data.format === QUESTION_FORMATS.TEXT) return !!qt && !!at;
-  if (data.format === QUESTION_FORMATS.CODE) return !!qc && !!ac;
-  if (data.format === QUESTION_FORMATS.BOTH) return !!qt && !!qc && !!at && !!ac;
+  if (data.format === QUESTION_FORMATS.CODE) return !!qc;
+  if (data.format === QUESTION_FORMATS.BOTH) return !!qt && !!qc;
   return true;
 }
 
@@ -107,7 +110,7 @@ const questionCreateSchema = z
     ...questionFieldsSchema,
   })
   .refine(hasRequiredFieldsForFormat, {
-    message: 'Provide the Text/Code fields required for the selected format (both Question and Answer).',
+    message: 'Provide the required content for the selected format (Question + Answer for TEXT; the single Text/Code box for CODE/BOTH).',
     path: ['format'],
   })
   .refine((data) => data.format === QUESTION_FORMATS.TEXT || !!data.codeLanguage, {

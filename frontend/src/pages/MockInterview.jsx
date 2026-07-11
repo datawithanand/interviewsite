@@ -127,6 +127,9 @@ function SessionScreen({ session, onFinished }) {
 
   const current = session.questions[index];
   const isLast = index === session.questions.length - 1;
+  // CODE/BOTH questions have no separate model answer to hide.
+  const needsReveal = current?.format === 'TEXT';
+  const effectivelyRevealed = revealed || !needsReveal;
 
   const answer = async (selfRating) => {
     const timeSpentSeconds = Math.round((Date.now() - startedRef.current) / 1000);
@@ -153,9 +156,9 @@ function SessionScreen({ session, onFinished }) {
       </div>
 
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-        <QuestionCardBody question={current} showAnswer={revealed} />
+        <QuestionCardBody question={current} showAnswer={effectivelyRevealed} />
 
-        {!revealed ? (
+        {!effectivelyRevealed ? (
           <button
             onClick={() => setRevealed(true)}
             className="mt-6 w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg py-2.5 text-sm font-medium"

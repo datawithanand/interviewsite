@@ -73,12 +73,10 @@ const TECHNOLOGIES = [
                 title: 'What is Discovery in ITOM?',
                 format: 'BOTH',
                 codeLanguage: 'javascript',
-                questionText: 'Explain what ServiceNow Discovery does, then show how to query discovered CIs.',
+                questionText:
+                  'Discovery scans the network to find and populate CIs in the CMDB automatically, using credentials and probes/sensors. Query discovered CIs like this:',
                 questionCode:
-                  "var gr = new GlideRecord('cmdb_ci_server');\ngr.addQuery('install_status', 1);\ngr.query();",
-                answerText:
-                  'Discovery scans the network to find and populate CIs in the CMDB automatically, using credentials and probes/sensors.',
-                answerCode: "while (gr.next()) {\n  gs.info(gr.getValue('name'));\n}",
+                  "var gr = new GlideRecord('cmdb_ci_server');\ngr.addQuery('install_status', 1);\ngr.query();\nwhile (gr.next()) {\n  gs.info(gr.getValue('name'));\n}",
                 difficulty: 'INTERMEDIATE',
                 tags: ['itom', 'discovery'],
               },
