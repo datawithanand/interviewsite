@@ -7,7 +7,7 @@ const { validate, questionCreateSchema, questionUpdateSchema, hasRequiredFieldsF
 const { recordAudit } = require('../utils/audit');
 const { AUDIT_ACTIONS, AUDIT_TARGET_TYPES, ROLES, NOTIFICATION_TYPES } = require('../utils/enums');
 const { notify } = require('../utils/notify');
-const { hasActiveChildren } = require('../utils/nodeHelpers');
+const { hasActiveChildren, getDescendantIds } = require('../utils/nodeHelpers');
 
 const router = express.Router();
 
@@ -125,7 +125,13 @@ router.get('/', authenticate, async (req, res, next) => {
     const q = validate(querySchema, req.query);
 
     const where = { node: { isArchived: false } };
-    if (q.nodeId) where.nodeId = q.nodeId;
+    if (q.nodeId) {
+      // Clicking a Technology/Submodule (non-leaf) should surface every
+      // question in its whole subtree, not just ones attached directly to
+      // it (which is impossible anyway — questions only attach to leaves).
+      const subtreeIds = await getDescendantIds(q.nodeId);
+      where.nodeId = { in: subtreeIds };
+    }
     if (q.difficulty) where.difficulty = q.difficulty;
     if (q.format) where.format = q.format;
     if (q.createdBy) where.createdById = q.createdBy;

@@ -232,6 +232,29 @@ describe('Questions', () => {
     expect(res.status).toBe(400);
   });
 
+  test('filtering by a non-leaf node returns questions from its whole subtree', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const technology = await createTestNode({ name: 'ServiceNow' });
+    const submodule = await createTestNode({ name: 'ITSM', parentId: technology.id });
+    const leafA = await createTestNode({ name: 'Incident Management', parentId: submodule.id });
+    const leafB = await createTestNode({ name: 'Change Management', parentId: submodule.id });
+
+    const qA = await createQuestion(token, leafA.id, { title: 'Q in leaf A' });
+    const qB = await createQuestion(token, leafB.id, { title: 'Q in leaf B' });
+
+    const byTechnology = await request(app).get('/api/questions').query({ nodeId: technology.id }).set(authHeader(token));
+    const idsUnderTechnology = byTechnology.body.questions.map((q) => q.id);
+    expect(idsUnderTechnology).toEqual(expect.arrayContaining([qA.body.question.id, qB.body.question.id]));
+
+    const bySubmodule = await request(app).get('/api/questions').query({ nodeId: submodule.id }).set(authHeader(token));
+    const idsUnderSubmodule = bySubmodule.body.questions.map((q) => q.id);
+    expect(idsUnderSubmodule).toEqual(expect.arrayContaining([qA.body.question.id, qB.body.question.id]));
+
+    // A leaf node still only returns its own questions.
+    const byLeaf = await request(app).get('/api/questions').query({ nodeId: leafA.id }).set(authHeader(token));
+    expect(byLeaf.body.questions.map((q) => q.id)).toEqual([qA.body.question.id]);
+  });
+
   test('deleted node hides its questions from the listing even though rows still exist historically', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();
