@@ -32,6 +32,7 @@ export default function QuestionsView() {
   const canManage = isContentManagerOrAdmin(user);
 
   const [nodePath, setNodePath] = useState(null);
+  const [nodeIsLeaf, setNodeIsLeaf] = useState(false);
   const [questions, setQuestions] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -57,12 +58,19 @@ export default function QuestionsView() {
   useEffect(() => {
     if (!nodeId) {
       setNodePath(null);
+      setNodeIsLeaf(false);
       return;
     }
     api
       .get(`/nodes/${nodeId}`)
-      .then((res) => setNodePath(res.node.path))
-      .catch(() => setNodePath(null));
+      .then((res) => {
+        setNodePath(res.node.path);
+        setNodeIsLeaf(res.node.isLeaf);
+      })
+      .catch(() => {
+        setNodePath(null);
+        setNodeIsLeaf(false);
+      });
   }, [nodeId]);
 
   const loadSavedSearches = useCallback(() => {
@@ -407,7 +415,11 @@ export default function QuestionsView() {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSaved={load}
-        nodeId={nodeId}
+        // Only pre-fill the location when viewing an actual leaf — a
+        // Technology/Submodule can't hold questions directly, so the modal
+        // should prompt for a real leaf instead of defaulting to one that
+        // would fail on save.
+        nodeId={nodeIsLeaf ? nodeId : undefined}
         question={editingQuestion}
       />
       <QuestionDetailModal open={!!detailId} onClose={() => setDetailId(null)} questionId={detailId} />
