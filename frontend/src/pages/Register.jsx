@@ -64,7 +64,7 @@ export default function Register() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 text-3xl mb-3">
             🧠
           </div>
-          <h1 className="text-2xl font-semibold text-white">TechPrep Hub</h1>
+          <h1 className="text-2xl font-semibold text-white">InterviewIQ</h1>
           <p className="text-sm text-white/70 mt-1">Join in, one question at a time.</p>
         </div>
 

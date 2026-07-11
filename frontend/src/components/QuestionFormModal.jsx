@@ -18,14 +18,19 @@ const emptyForm = {
   tags: '',
 };
 
-function TextOrCodeField({ label, format, textValue, codeValue, onTextChange, onCodeChange, codeLanguage, dark }) {
+function TextOrCodeField({ format, textValue, codeValue, onTextChange, onCodeChange, codeLanguage, dark }) {
   const showText = format !== 'CODE';
   const showCode = format !== 'TEXT';
+  // Only label the two boxes individually when both appear together (BOTH
+  // format) — with just one box, the section header above already says
+  // "Question" / "Answer" and a plain textarea vs. a code editor is
+  // self-explanatory, so no extra label is needed.
+  const showSubLabels = showText && showCode;
   return (
     <div className="space-y-3">
       {showText && (
         <div>
-          <label className="block text-sm font-medium mb-1">{label} — Text</label>
+          {showSubLabels && <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Text</label>}
           <textarea
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
             rows={4}
@@ -37,7 +42,7 @@ function TextOrCodeField({ label, format, textValue, codeValue, onTextChange, on
       )}
       {showCode && (
         <div>
-          <label className="block text-sm font-medium mb-1">{label} — Code</label>
+          {showSubLabels && <label className="block text-xs font-medium mb-1 text-gray-500 dark:text-gray-400">Code</label>}
           <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
             <Editor
               height="180px"
@@ -55,7 +60,8 @@ function TextOrCodeField({ label, format, textValue, codeValue, onTextChange, on
 }
 
 export default function QuestionFormModal({ open, onClose, onSaved, nodeId, question }) {
-  const { dark } = useTheme();
+  const { theme } = useTheme();
+  const dark = theme !== 'light';
   const [form, setForm] = useState(emptyForm);
   const [selectedNodeId, setSelectedNodeId] = useState(nodeId || null);
   const [selectedNodePath, setSelectedNodePath] = useState(null);
@@ -236,7 +242,6 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
           <h4 className="text-sm font-semibold mb-2">Question</h4>
           <TextOrCodeField
-            label="Question"
             format={form.format}
             textValue={form.questionText}
             codeValue={form.questionCode}
@@ -250,7 +255,6 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3">
           <h4 className="text-sm font-semibold mb-2">Answer</h4>
           <TextOrCodeField
-            label="Answer"
             format={form.format}
             textValue={form.answerText}
             codeValue={form.answerCode}

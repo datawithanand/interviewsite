@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
 import { api } from '../api/client';
 import NotificationBell from './NotificationBell';
+import ThemeSwitcher from './ThemeSwitcher';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -19,7 +20,7 @@ export default function Header({ onMenuClick }) {
         ☰
       </button>
       <Link to="/" className="font-semibold text-sm md:text-base flex items-center gap-1.5">
-        <span aria-hidden>🧠</span> TechPrep Hub
+        <span aria-hidden>🧠</span> InterviewIQ
       </Link>
       <div className="flex-1" />
       {gameStats && (
@@ -33,18 +34,16 @@ export default function Header({ onMenuClick }) {
           <span>Lvl {gameStats.level}</span>
         </Link>
       )}
+      <ThemeSwitcher />
       <NotificationBell />
-      {isContentManagerOrAdmin(user) && (
-        <Link to="/admin" className="text-sm text-brand-600 hover:underline hidden sm:inline">
-          {isAdmin(user) ? 'Admin' : 'Manage'}
-        </Link>
-      )}
       <Link to="/profile" className="text-sm hover:underline hidden sm:inline">
         {user?.username}
       </Link>
-      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hidden sm:inline">
-        {user?.role?.replace('_', ' ')}
-      </span>
+      {isContentManagerOrAdmin(user) && (
+        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hidden sm:inline">
+          {isAdmin(user) ? 'Admin' : 'Content Manager'}
+        </span>
+      )}
       <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">
         Sign out
       </button>

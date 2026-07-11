@@ -137,7 +137,7 @@ export default function UsersTab() {
                     <button onClick={() => toggleActive(u)} className="text-xs text-red-600 hover:underline">
                       {u.isActive ? 'Deactivate' : 'Reactivate'}
                     </button>
-                    <button onClick={() => forceLogout(u)} className="text-xs text-gray-600 hover:underline">
+                    <button onClick={() => forceLogout(u)} className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:underline">
                       Force Logout
                     </button>
                   </td>

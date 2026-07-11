@@ -1,17 +1,32 @@
-import { createContext, useContext, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
-// The app now uses a single "Ocean Slate" theme everywhere (auth pages and
-// the authenticated app share the same gradient background), so there is
-// no light/dark toggle anymore — the `dark` Tailwind variant classes
-// already used throughout the app are simply always active.
-export function ThemeProvider({ children }) {
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
+// Three selectable themes:
+//  - 'ocean': the branded gradient (same as Login/Register), default on
+//    first visit. Implemented as Tailwind dark mode + a glass re-skin.
+//  - 'dark': a plain flat dark theme (Tailwind's dark: colors, no gradient).
+//  - 'light': a plain flat light theme (Tailwind's default light colors).
+const THEMES = ['ocean', 'light', 'dark'];
 
-  return <ThemeContext.Provider value={{ dark: true }}>{children}</ThemeContext.Provider>;
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    return THEMES.includes(stored) ? stored : 'ocean';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    // 'ocean' needs the dark: utility classes active as its base, plus the
+    // extra 'ocean' class that re-skins those surfaces as glass (see
+    // styles/index.css). 'dark' uses the same base without the glass
+    // layer. 'light' drops dark: entirely.
+    root.classList.toggle('dark', theme === 'ocean' || theme === 'dark');
+    root.classList.toggle('ocean', theme === 'ocean');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

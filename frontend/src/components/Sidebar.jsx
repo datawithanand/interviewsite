@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
 import { api } from '../api/client';
-import { useAuth, isContentManagerOrAdmin } from '../context/AuthContext';
+import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
 import NodeTreeItem from './NodeTreeItem';
 import Modal from './Modal';
 
@@ -163,6 +163,24 @@ export default function Sidebar({ open, onClose }) {
             />
           ))}
         </nav>
+
+        {canManage && (
+          <div className="p-2 border-t border-gray-200 dark:border-gray-700">
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-brand-600 text-white'
+                    : 'text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                }`
+              }
+            >
+              <span aria-hidden>{isAdmin(user) ? '🛠️' : '📝'}</span>
+              {isAdmin(user) ? 'Admin Panel' : 'Content Manager Panel'}
+            </NavLink>
+          </div>
+        )}
       </aside>
 
       <Modal
