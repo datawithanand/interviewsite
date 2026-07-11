@@ -60,11 +60,18 @@ describe('Questions', () => {
     expect(serials).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
-  test('TEXT format requires questionText and answerText', async () => {
+  test('TEXT format requires only answerText — the question itself is the title', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();
-    const res = await createQuestion(token, node.id, { questionText: '', answerText: '' });
-    expect(res.status).toBe(400);
+
+    const missingAnswer = await createQuestion(token, node.id, { answerText: '' });
+    expect(missingAnswer.status).toBe(400);
+
+    // questionText is no longer collected for TEXT — omitting it is fine,
+    // and the backend nulls it out even if a client sends one.
+    const res = await createQuestion(token, node.id, { questionText: '' });
+    expect(res.status).toBe(201);
+    expect(res.body.question.questionText).toBeNull();
   });
 
   test('CODE format requires only questionCode and codeLanguage — no separate answer', async () => {

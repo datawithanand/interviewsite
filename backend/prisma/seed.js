@@ -29,7 +29,6 @@ const TECHNOLOGIES = [
               {
                 title: 'What is an Incident in ServiceNow?',
                 format: 'TEXT',
-                questionText: 'Define an incident and explain how it differs from a problem.',
                 answerText:
                   'An incident is an unplanned interruption to a service or a reduction in quality of a service. It differs from a Problem, which is the underlying cause of one or more incidents.',
                 difficulty: 'BEGINNER',
@@ -39,8 +38,7 @@ const TECHNOLOGIES = [
                 title: 'Auto-assign an incident based on category',
                 format: 'CODE',
                 codeLanguage: 'javascript',
-                questionCode: '// Write a Business Rule (before insert) that sets the assignment\n// group when category is "Network".',
-                answerCode:
+                questionCode:
                   "(function executeRule(current, previous) {\n  if (current.category == 'network') {\n    current.assignment_group = gs.getProperty('network_team_sys_id');\n  }\n})(current, previous);",
                 difficulty: 'INTERMEDIATE',
                 tags: ['incident', 'business-rule'],
@@ -53,7 +51,6 @@ const TECHNOLOGIES = [
               {
                 title: 'Explain the three change types in ServiceNow',
                 format: 'TEXT',
-                questionText: 'What are Standard, Normal, and Emergency changes?',
                 answerText:
                   'Standard changes are pre-approved, low-risk, repeatable. Normal changes require CAB approval and follow the full workflow. Emergency changes are made to resolve an incident quickly and are approved retroactively.',
                 difficulty: 'BEGINNER',
@@ -95,7 +92,6 @@ const TECHNOLOGIES = [
           {
             title: 'What is the difference between a list and a tuple?',
             format: 'TEXT',
-            questionText: 'Explain the key differences between list and tuple in Python.',
             answerText: 'Lists are mutable and defined with [], tuples are immutable and defined with (). Tuples are hashable if their contents are, so they can be used as dict keys; lists cannot.',
             difficulty: 'BEGINNER',
             tags: ['python', 'core'],

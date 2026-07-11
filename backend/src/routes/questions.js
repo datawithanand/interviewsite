@@ -85,15 +85,16 @@ async function createQuestionWithSerial(tx, nodeId, data, userId, explicitSerial
   }
 
   const format = data.format === 'TEXT' ? 'TEXT' : data.format;
-  // Only TEXT keeps a separate Answer (it's the only format with a
-  // reveal-answer flow); CODE and BOTH hold everything in the Question
-  // fields, so answerText/answerCode are never populated for them.
+  // The question itself lives in `title` for every format. TEXT only adds
+  // a separate Answer (questionText is unused for TEXT); CODE and BOTH
+  // hold their whole solution in the Question fields, so answerText/
+  // answerCode are never populated for them.
   return tx.question.create({
     data: {
       nodeId,
       serialNumber,
       title: data.title,
-      questionText: format === 'CODE' ? null : data.questionText || null,
+      questionText: format === 'BOTH' ? data.questionText || null : null,
       questionCode: format === 'TEXT' ? null : data.questionCode || null,
       answerText: format === 'TEXT' ? data.answerText || null : null,
       answerCode: null,
@@ -251,13 +252,13 @@ router.patch('/:id', authenticate, requireContentManagerOrAdmin, async (req, res
 
     const updateData = { ...fields };
     if (fields.tags) updateData.tags = JSON.stringify(fields.tags);
-    // Only keep the fields relevant to the (possibly newly-selected) format —
-    // a leftover questionText from a prior TEXT format shouldn't linger once
-    // the question has switched to CODE-only, and vice versa. TEXT is the
-    // only format with a separate Answer (used by the reveal-answer flow in
-    // Practice/Mock Interview); CODE and BOTH never populate answerText/
-    // answerCode, so those are always cleared outside of TEXT.
+    // Only keep the fields relevant to the (possibly newly-selected) format.
+    // The question itself always lives in `title`. TEXT only adds a
+    // separate Answer (questionText is unused for TEXT); CODE and BOTH
+    // hold their whole solution in the Question fields, so answerText/
+    // answerCode are always cleared outside of TEXT.
     if (merged.format === 'TEXT') {
+      updateData.questionText = null;
       updateData.questionCode = null;
       updateData.answerCode = null;
       updateData.codeLanguage = null;

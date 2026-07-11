@@ -75,17 +75,19 @@ const nodeUpdateSchema = z.object({
 });
 
 // ---------- Questions (format-driven Text/Code fields) ----------
-// TEXT keeps a separate Question and Answer (used for the reveal-answer
-// flow in Practice/Mock Interview). CODE and BOTH intentionally have no
-// separate Answer — the single Code box (and, for BOTH, the Text box)
-// hold the whole thing; answerText/answerCode are never populated for
-// these formats and Practice/Mock Interview skip straight to self-rating.
+// The question itself lives in `title` for every format. TEXT only adds
+// a separate Answer (used by the reveal-answer flow in Practice/Mock
+// Interview) — questionText is not collected/used for TEXT at all. CODE
+// and BOTH have no separate Answer — the single Code box (and, for BOTH,
+// the Text box) hold the whole solution; answerText/answerCode are never
+// populated for these formats and Practice/Mock Interview skip straight
+// to self-rating.
 function hasRequiredFieldsForFormat(data) {
   const qt = (data.questionText || '').trim();
   const qc = (data.questionCode || '').trim();
   const at = (data.answerText || '').trim();
 
-  if (data.format === QUESTION_FORMATS.TEXT) return !!qt && !!at;
+  if (data.format === QUESTION_FORMATS.TEXT) return !!at;
   if (data.format === QUESTION_FORMATS.CODE) return !!qc;
   if (data.format === QUESTION_FORMATS.BOTH) return !!qt && !!qc;
   return true;

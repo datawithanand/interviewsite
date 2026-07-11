@@ -105,7 +105,9 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
           title: form.title,
           format: form.format,
           codeLanguage: form.format === 'TEXT' ? null : form.codeLanguage,
-          questionText: form.format === 'CODE' ? null : form.questionText,
+          // The question itself is `title`, for every format. questionText
+          // is only used by BOTH (its Text box); TEXT never collects it.
+          questionText: form.format === 'BOTH' ? form.questionText : null,
           questionCode: form.format === 'TEXT' ? null : form.questionCode,
           // Only TEXT has a separate Answer — CODE/BOTH hold everything in
           // the Question fields above and skip the reveal-answer step in
@@ -177,7 +179,7 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Title</label>
+            <label className="block text-sm font-medium mb-1">Question</label>
             <input
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2 text-sm"
               value={form.title}
@@ -240,10 +242,7 @@ export default function QuestionFormModal({ open, onClose, onSaved, nodeId, ques
         </div>
 
         {form.format === 'TEXT' && (
-          <>
-            <TextBox label="Question" value={form.questionText} onChange={(v) => setForm({ ...form, questionText: v })} />
-            <TextBox label="Answer" value={form.answerText} onChange={(v) => setForm({ ...form, answerText: v })} />
-          </>
+          <TextBox label="Answer" value={form.answerText} onChange={(v) => setForm({ ...form, answerText: v })} />
         )}
 
         {form.format === 'CODE' && (

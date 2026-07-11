@@ -45,15 +45,19 @@ export default function QuestionDetailModal({ open, onClose, questionId }) {
             <span className="text-gray-400">· {question.viewCount} views</span>
           </div>
 
-          <div>
-            {question.format === 'TEXT' && <h4 className="text-sm font-semibold mb-1">Question</h4>}
-            {question.questionText && <p className="text-sm whitespace-pre-wrap mb-2">{question.questionText}</p>}
-            {question.questionCode && (
-              <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
-                <code>{question.questionCode}</code>
-              </pre>
-            )}
-          </div>
+          {/* The question itself is the title, already shown in the modal's
+              header bar. This section only has anything to add for CODE/
+              BOTH, whose solution lives in questionText/questionCode. */}
+          {(question.questionText || question.questionCode) && (
+            <div>
+              {question.questionText && <p className="text-sm whitespace-pre-wrap mb-2">{question.questionText}</p>}
+              {question.questionCode && (
+                <pre className="text-sm bg-gray-100 dark:bg-gray-900 rounded-lg p-3 overflow-x-auto">
+                  <code>{question.questionCode}</code>
+                </pre>
+              )}
+            </div>
+          )}
 
           {/* Only TEXT questions have a separate Answer — CODE/BOTH hold
               everything above (no reveal-answer step for those formats). */}
