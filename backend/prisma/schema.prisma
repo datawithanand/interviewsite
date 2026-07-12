@@ -31,6 +31,7 @@ model User {
   role                String    @default("REGULAR_USER")
   bio                 String?
   profileAvatarUrl    String?
+  themePreference     String?
   isActive            Boolean   @default(true)
   failedLoginAttempts Int       @default(0)
   accountLockedUntil  DateTime?
@@ -52,6 +53,7 @@ model User {
   nodesCreated           Node[]
   sessions               Session[]
   comments               Comment[]
+  commentLikes           CommentLike[]
   savedSearches          SavedSearch[]
   notifications          Notification[]     @relation("NotificationRecipient")
   triggeredNotifications Notification[]     @relation("NotificationActor")
@@ -133,17 +135,34 @@ model Question {
 }
 
 model Comment {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   questionId String
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question   Question  @relation(fields: [questionId], references: [id], onDelete: Cascade)
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   content    String
-  isPinned   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  isPinned   Boolean   @default(false)
+  parentId   String?
+  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    Comment[] @relation("CommentReplies")
+  likes      CommentLike[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([questionId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  id        String   @id @default(uuid())
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
 }
 
 model SavedSearch {

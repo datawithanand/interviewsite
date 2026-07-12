@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.use(authenticate);
 
-function serializeComment(c) {
+function serializeComment(c, userId) {
   return {
     id: c.id,
     questionId: c.questionId,
@@ -20,19 +20,28 @@ function serializeComment(c) {
     username: c.user ? c.user.username : 'deleted user',
     content: c.content,
     isPinned: c.isPinned,
+    parentId: c.parentId,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
+    likeCount: c.likes ? c.likes.length : 0,
+    likedByMe: c.likes ? c.likes.some((l) => l.userId === userId) : false,
+    likedByUsernames: c.likes ? c.likes.map((l) => (l.user ? l.user.username : 'deleted user')) : [],
   };
 }
+
+const COMMENT_INCLUDE = {
+  user: { select: { username: true } },
+  likes: { include: { user: { select: { username: true } } } },
+};
 
 router.get('/questions/:questionId/comments', async (req, res, next) => {
   try {
     const comments = await prisma.comment.findMany({
       where: { questionId: req.params.questionId },
       orderBy: [{ isPinned: 'desc' }, { createdAt: 'asc' }],
-      include: { user: { select: { username: true } } },
+      include: COMMENT_INCLUDE,
     });
-    res.json({ comments: comments.map(serializeComment) });
+    res.json({ comments: comments.map((c) => serializeComment(c, req.user.id)) });
   } catch (err) {
     next(err);
   }
@@ -40,15 +49,22 @@ router.get('/questions/:questionId/comments', async (req, res, next) => {
 
 router.post('/questions/:questionId/comments', async (req, res, next) => {
   try {
-    const schema = z.object({ content: z.string().trim().min(1).max(2000) });
+    const schema = z.object({ content: z.string().trim().min(1).max(2000), parentId: z.string().min(1).optional() });
     const data = validate(schema, req.body);
 
     const question = await prisma.question.findUnique({ where: { id: req.params.questionId } });
     if (!question) return res.status(404).json({ error: 'Question not found.' });
 
+    if (data.parentId) {
+      const parent = await prisma.comment.findUnique({ where: { id: data.parentId } });
+      if (!parent || parent.questionId !== question.id) {
+        return res.status(400).json({ error: 'Parent comment not found on this question.' });
+      }
+    }
+
     const comment = await prisma.comment.create({
-      data: { questionId: question.id, userId: req.user.id, content: data.content },
-      include: { user: { select: { username: true } } },
+      data: { questionId: question.id, userId: req.user.id, content: data.content, parentId: data.parentId || null },
+      include: COMMENT_INCLUDE,
     });
 
     if (question.createdById) {
@@ -62,7 +78,29 @@ router.post('/questions/:questionId/comments', async (req, res, next) => {
       });
     }
 
-    res.status(201).json({ comment: serializeComment(comment) });
+    res.status(201).json({ comment: serializeComment(comment, req.user.id) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/comments/:id/like', async (req, res, next) => {
+  try {
+    const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
+    if (!comment) return res.status(404).json({ error: 'Comment not found.' });
+
+    const existing = await prisma.commentLike.findUnique({
+      where: { commentId_userId: { commentId: comment.id, userId: req.user.id } },
+    });
+
+    if (existing) {
+      await prisma.commentLike.delete({ where: { id: existing.id } });
+    } else {
+      await prisma.commentLike.create({ data: { commentId: comment.id, userId: req.user.id } });
+    }
+
+    const updated = await prisma.comment.findUnique({ where: { id: comment.id }, include: COMMENT_INCLUDE });
+    res.json({ comment: serializeComment(updated, req.user.id) });
   } catch (err) {
     next(err);
   }
@@ -73,7 +111,8 @@ router.delete('/comments/:id', async (req, res, next) => {
     const comment = await prisma.comment.findUnique({ where: { id: req.params.id } });
     if (!comment) return res.status(404).json({ error: 'Comment not found.' });
 
-    const canDelete = comment.userId === req.user.id || req.user.role === ROLES.ADMIN;
+    const canDelete =
+      comment.userId === req.user.id || req.user.role === ROLES.ADMIN || req.user.role === ROLES.CONTENT_MANAGER;
     if (!canDelete) return res.status(403).json({ error: 'You do not have permission to delete this comment.' });
 
     await prisma.comment.delete({ where: { id: comment.id } });
@@ -103,10 +142,10 @@ router.patch('/comments/:id/pin', requireAdmin, async (req, res, next) => {
     const updated = await prisma.comment.update({
       where: { id: comment.id },
       data: { isPinned: data.isPinned },
-      include: { user: { select: { username: true } } },
+      include: COMMENT_INCLUDE,
     });
 
-    res.json({ comment: serializeComment(updated) });
+    res.json({ comment: serializeComment(updated, req.user.id) });
   } catch (err) {
     next(err);
   }

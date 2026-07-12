@@ -11,10 +11,13 @@ const { revokeAllSessionsForUser } = require('../utils/session');
 
 const router = express.Router();
 
+const THEME_VALUES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
+
 const profileUpdateSchema = z.object({
   email: z.string().trim().email().optional().nullable(),
   bio: z.string().trim().max(2000).optional().nullable(),
   profileAvatarUrl: z.string().trim().url().max(2000).optional().nullable(),
+  themePreference: z.enum(THEME_VALUES).optional(),
 });
 
 const changePasswordSchema = z.object({
@@ -44,6 +47,7 @@ router.get('/', async (req, res) => {
       role: req.user.role,
       bio: req.user.bio,
       profileAvatarUrl: req.user.profileAvatarUrl,
+      themePreference: req.user.themePreference,
       createdAt: req.user.createdAt,
       lastLogin: req.user.lastLogin,
       securityQuestion: req.user.securityQuestion,
@@ -63,6 +67,7 @@ router.patch('/', async (req, res, next) => {
         email: updated.email,
         bio: updated.bio,
         profileAvatarUrl: updated.profileAvatarUrl,
+        themePreference: updated.themePreference,
       },
     });
   } catch (err) {

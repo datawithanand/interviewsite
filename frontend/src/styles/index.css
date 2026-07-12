@@ -51,3 +51,133 @@ html.ocean body {
 .ocean [class*="dark:border-gray-600"] {
   border-color: rgba(255, 255, 255, 0.16) !important;
 }
+
+/* -----------------------------------------------------------------------
+   Sunset, Forest, Midnight, Slate — four more glass themes added
+   alongside Ocean. Each follows the identical structure as the Ocean
+   block above (own gradient body background + the same translucent
+   glass-surface overrides), just with a different hue, so text contrast
+   and legibility match Ocean's already-verified behavior. None of these
+   selectors overlap with `.ocean`, so the original theme is untouched.
+   ----------------------------------------------------------------------- */
+
+/* Sunset — warm amber/rose dusk gradient. */
+html.sunset body {
+  background: linear-gradient(135deg, #1a0f0a 0%, #3d1f1a 45%, #f97316 130%);
+  background-attachment: fixed;
+}
+
+.sunset [class*="dark:bg-gray-900/50"],
+.sunset [class*="dark:bg-gray-900/40"] {
+  background-color: rgba(255, 237, 213, 0.06) !important;
+}
+
+.sunset [class*="dark:bg-gray-800"] {
+  background-color: rgba(255, 237, 213, 0.08) !important;
+  backdrop-filter: blur(14px);
+}
+
+.sunset [class*="dark:bg-gray-700"] {
+  background-color: rgba(255, 237, 213, 0.14) !important;
+}
+
+.sunset [class*="dark:hover:bg-gray-700"]:hover,
+.sunset [class*="dark:hover:bg-gray-600"]:hover {
+  background-color: rgba(255, 237, 213, 0.19) !important;
+}
+
+.sunset [class*="dark:border-gray-700"],
+.sunset [class*="dark:border-gray-600"] {
+  border-color: rgba(255, 237, 213, 0.18) !important;
+}
+
+/* Forest — deep emerald/green gradient. */
+html.forest body {
+  background: linear-gradient(135deg, #06120c 0%, #0f2e1f 55%, #10b981 140%);
+  background-attachment: fixed;
+}
+
+.forest [class*="dark:bg-gray-900/50"],
+.forest [class*="dark:bg-gray-900/40"] {
+  background-color: rgba(236, 253, 245, 0.05) !important;
+}
+
+.forest [class*="dark:bg-gray-800"] {
+  background-color: rgba(236, 253, 245, 0.07) !important;
+  backdrop-filter: blur(14px);
+}
+
+.forest [class*="dark:bg-gray-700"] {
+  background-color: rgba(236, 253, 245, 0.13) !important;
+}
+
+.forest [class*="dark:hover:bg-gray-700"]:hover,
+.forest [class*="dark:hover:bg-gray-600"]:hover {
+  background-color: rgba(236, 253, 245, 0.18) !important;
+}
+
+.forest [class*="dark:border-gray-700"],
+.forest [class*="dark:border-gray-600"] {
+  border-color: rgba(236, 253, 245, 0.16) !important;
+}
+
+/* Midnight — deep violet/purple gradient. */
+html.midnight body {
+  background: linear-gradient(135deg, #100a1f 0%, #2e1a49 55%, #8b5cf6 140%);
+  background-attachment: fixed;
+}
+
+.midnight [class*="dark:bg-gray-900/50"],
+.midnight [class*="dark:bg-gray-900/40"] {
+  background-color: rgba(245, 243, 255, 0.05) !important;
+}
+
+.midnight [class*="dark:bg-gray-800"] {
+  background-color: rgba(245, 243, 255, 0.07) !important;
+  backdrop-filter: blur(14px);
+}
+
+.midnight [class*="dark:bg-gray-700"] {
+  background-color: rgba(245, 243, 255, 0.13) !important;
+}
+
+.midnight [class*="dark:hover:bg-gray-700"]:hover,
+.midnight [class*="dark:hover:bg-gray-600"]:hover {
+  background-color: rgba(245, 243, 255, 0.18) !important;
+}
+
+.midnight [class*="dark:border-gray-700"],
+.midnight [class*="dark:border-gray-600"] {
+  border-color: rgba(245, 243, 255, 0.16) !important;
+}
+
+/* Slate — understated graphite/blue-gray gradient, for a quieter option
+   than the more saturated themes above. */
+html.slate body {
+  background: linear-gradient(135deg, #0d1117 0%, #1c2430 55%, #334155 140%);
+  background-attachment: fixed;
+}
+
+.slate [class*="dark:bg-gray-900/50"],
+.slate [class*="dark:bg-gray-900/40"] {
+  background-color: rgba(226, 232, 240, 0.05) !important;
+}
+
+.slate [class*="dark:bg-gray-800"] {
+  background-color: rgba(226, 232, 240, 0.07) !important;
+  backdrop-filter: blur(14px);
+}
+
+.slate [class*="dark:bg-gray-700"] {
+  background-color: rgba(226, 232, 240, 0.12) !important;
+}
+
+.slate [class*="dark:hover:bg-gray-700"]:hover,
+.slate [class*="dark:hover:bg-gray-600"]:hover {
+  background-color: rgba(226, 232, 240, 0.17) !important;
+}
+
+.slate [class*="dark:border-gray-700"],
+.slate [class*="dark:border-gray-600"] {
+  border-color: rgba(226, 232, 240, 0.15) !important;
+}

@@ -2,12 +2,21 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
-// Three selectable themes:
-//  - 'ocean': the branded gradient (same as Login/Register), default on
-//    first visit. Implemented as Tailwind dark mode + a glass re-skin.
+// Selectable themes:
+//  - 'ocean': the original branded blue/teal gradient (same as Login/
+//    Register), default on first visit.
+//  - 'sunset', 'forest', 'midnight', 'slate': four additional gradient
+//    "glass" themes added alongside ocean, following the exact same
+//    Tailwind-dark + glass-reskin architecture (see styles/index.css) so
+//    ocean/light/dark are never touched.
 //  - 'dark': a plain flat dark theme (Tailwind's dark: colors, no gradient).
 //  - 'light': a plain flat light theme (Tailwind's default light colors).
-const THEMES = ['ocean', 'light', 'dark'];
+const THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
+
+// Every theme except 'light' runs on Tailwind's dark: utility classes as its
+// base. Every theme except plain 'light'/'dark' additionally gets a glass
+// re-skin class matching its own name (see styles/index.css).
+const GLASS_THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate'];
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -17,12 +26,10 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    // 'ocean' needs the dark: utility classes active as its base, plus the
-    // extra 'ocean' class that re-skins those surfaces as glass (see
-    // styles/index.css). 'dark' uses the same base without the glass
-    // layer. 'light' drops dark: entirely.
-    root.classList.toggle('dark', theme === 'ocean' || theme === 'dark');
-    root.classList.toggle('ocean', theme === 'ocean');
+    root.classList.toggle('dark', theme !== 'light');
+    // Clear every glass class, then set only the active one, so switching
+    // between glass themes never leaves a stale class behind.
+    GLASS_THEMES.forEach((t) => root.classList.toggle(t, t === theme));
     localStorage.setItem('theme', theme);
   }, [theme]);
 

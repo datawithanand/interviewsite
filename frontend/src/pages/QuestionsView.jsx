@@ -1,11 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth, isContentManagerOrAdmin } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { DIFFICULTIES, FORMATS, FORMAT_ICON, DIFFICULTY_COLOR } from '../constants';
+import { DIFFICULTIES, FORMATS } from '../constants';
 import QuestionFormModal from '../components/QuestionFormModal';
 import QuestionDetailModal from '../components/QuestionDetailModal';
+import QuestionListCard from '../components/QuestionListCard';
+import QuestionsKanbanBoard from '../components/QuestionsKanbanBoard';
+import { emit } from '../utils/events';
 
 const RECENT_SEARCHES_KEY = 'recentSearches';
 const MAX_RECENT_SEARCHES = 10;
@@ -44,6 +47,8 @@ export default function QuestionsView() {
   const [sort, setSort] = useState('serial');
   const [view, setView] = useState('list');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [allNodes, setAllNodes] = useState([]);
+  const [techFilter, setTechFilter] = useState('');
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -73,6 +78,26 @@ export default function QuestionsView() {
       });
   }, [nodeId]);
 
+  useEffect(() => {
+    api.get('/nodes').then((res) => setAllNodes(res.nodes)).catch(() => {});
+  }, []);
+
+  const nodesById = useMemo(() => new Map(allNodes.map((n) => [n.id, n])), [allNodes]);
+  const technologies = useMemo(
+    () => allNodes.filter((n) => !n.parentId).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [allNodes]
+  );
+
+  // The Jira-style board only makes sense scoped to one Technology at a
+  // time (its example is "ITSM" then "ITOM", both submodules of the same
+  // technology) — so switching into Card view defaults to the first one
+  // if the viewer hasn't already picked a Technology or a specific node.
+  useEffect(() => {
+    if (view === 'card' && !nodeId && !techFilter && technologies.length > 0) {
+      setTechFilter(technologies[0].id);
+    }
+  }, [view, nodeId, techFilter, technologies]);
+
   const loadSavedSearches = useCallback(() => {
     api.get('/saved-searches').then((res) => setSavedSearches(res.savedSearches)).catch(() => {});
   }, []);
@@ -98,7 +123,8 @@ export default function QuestionsView() {
     setLoading(true);
     setError('');
     const params = new URLSearchParams();
-    if (nodeId) params.set('nodeId', nodeId);
+    const scopeNodeId = nodeId || techFilter;
+    if (scopeNodeId) params.set('nodeId', scopeNodeId);
     if (search) params.set('q', search);
     if (difficulty) params.set('difficulty', difficulty);
     if (format) params.set('format', format);
@@ -114,7 +140,7 @@ export default function QuestionsView() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [nodeId, search, difficulty, format, sort, favoritesOnly]);
+  }, [nodeId, techFilter, search, difficulty, format, sort, favoritesOnly]);
 
   useEffect(() => {
     load();
@@ -140,6 +166,7 @@ export default function QuestionsView() {
     if (!window.confirm(`Delete question "${q.title}"?`)) return;
     await api.del(`/questions/${q.id}`);
     load();
+    emit('questions:changed');
     showToast(`Deleted "${q.title}"`, {
       action: {
         label: 'Undo',
@@ -159,6 +186,7 @@ export default function QuestionsView() {
               tags: q.tags,
             });
             load();
+            emit('questions:changed');
           } catch {
             showToast('Could not undo — serial number was reused since deletion.', { durationMs: 5000 });
           }
@@ -170,6 +198,7 @@ export default function QuestionsView() {
   const duplicateQuestion = async (q) => {
     await api.post(`/questions/${q.id}/duplicate`, {});
     load();
+    emit('questions:changed');
   };
 
   const currentFilters = { nodeId, difficulty, format, sort, favoritesOnly, q: search };
@@ -236,6 +265,20 @@ export default function QuestionsView() {
             ⌘K
           </kbd>
         </div>
+        {!nodeId && (
+          <select
+            className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm"
+            value={techFilter}
+            onChange={(e) => setTechFilter(e.target.value)}
+          >
+            <option value="">All technologies</option>
+            {technologies.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        )}
         <select
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm"
           value={difficulty}
@@ -346,75 +389,48 @@ export default function QuestionsView() {
 
       {questions.length > 0 && <p className="text-xs text-gray-400 mb-2">{total} question(s)</p>}
 
-      <div className={view === 'card' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3' : 'space-y-2'}>
-        {questions.map((q) => (
-          <div
-            key={q.id}
-            className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 hover:shadow-sm transition-shadow"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <button className="text-left flex-1" onClick={() => setDetailId(q.id)}>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-400">#{q.serialNumber}</span>
-                  <span title={q.format}>{FORMAT_ICON[q.format]}</span>
-                  <span className="font-medium truncate">{q.title}</span>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mt-1.5 items-center">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DIFFICULTY_COLOR[q.difficulty]}`}>
-                    {q.difficulty}
-                  </span>
-                  {q.node && !nodeId && <span className="text-xs text-gray-400">{q.node.name}</span>}
-                  <span className="text-xs text-gray-400">by {q.createdByUsername || 'unknown'}</span>
-                  <span className="text-xs text-gray-400">
-                    updated {new Date(q.updatedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </button>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => toggleFavorite(q)} title="Favorite" className="text-sm">
-                  {q.favoritedByMe ? '★' : '☆'}
-                </button>
-                <button onClick={() => setDetailId(q.id)} title="View" className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
-                  View
-                </button>
-                {canManage && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setEditingQuestion(q);
-                        setFormOpen(true);
-                      }}
-                      title="Edit"
-                      className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => duplicateQuestion(q)}
-                      title="Duplicate"
-                      className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      ⧉
-                    </button>
-                    <button
-                      onClick={() => deleteQuestion(q)}
-                      title="Delete"
-                      className="text-xs px-1.5 py-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      🗑️
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {view === 'card' ? (
+        <QuestionsKanbanBoard
+          questions={questions}
+          nodesById={nodesById}
+          canManage={canManage}
+          onView={(q) => setDetailId(q.id)}
+          onToggleFavorite={toggleFavorite}
+          onEdit={(q) => {
+            setEditingQuestion(q);
+            setFormOpen(true);
+          }}
+          onDuplicate={duplicateQuestion}
+          onDelete={deleteQuestion}
+        />
+      ) : (
+        <div className="space-y-2">
+          {questions.map((q) => (
+            <QuestionListCard
+              key={q.id}
+              q={q}
+              showNodeName={!nodeId}
+              canManage={canManage}
+              onView={() => setDetailId(q.id)}
+              onToggleFavorite={() => toggleFavorite(q)}
+              onEdit={() => {
+                setEditingQuestion(q);
+                setFormOpen(true);
+              }}
+              onDuplicate={() => duplicateQuestion(q)}
+              onDelete={() => deleteQuestion(q)}
+            />
+          ))}
+        </div>
+      )}
 
       <QuestionFormModal
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        onSaved={load}
+        onSaved={() => {
+          load();
+          emit('questions:changed');
+        }}
         // Only pre-fill the location when viewing an actual leaf — a
         // Technology/Submodule can't hold questions directly, so the modal
         // should prompt for a real leaf instead of defaulting to one that

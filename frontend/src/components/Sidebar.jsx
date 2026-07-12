@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
 import NodeTreeItem from './NodeTreeItem';
 import Modal from './Modal';
+import { on } from '../utils/events';
 
 export default function Sidebar({ open, onClose }) {
   const { user } = useAuth();
@@ -12,7 +13,6 @@ export default function Sidebar({ open, onClose }) {
   const [addModalParent, setAddModalParent] = useState(undefined); // undefined = closed, null = top-level, node = child of node
   const [newName, setNewName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [dueCount, setDueCount] = useState(0);
 
   const canManage = isContentManagerOrAdmin(user);
 
@@ -22,8 +22,12 @@ export default function Sidebar({ open, onClose }) {
 
   useEffect(() => {
     loadNodes();
-    api.get('/progress/queue?limit=1').then((res) => setDueCount(res.dueCount)).catch(() => {});
   }, [loadNodes]);
+
+  // Question create/delete/move happen in QuestionsView, far from this
+  // component — listen for the shared event instead of prop-drilling a
+  // refresh callback, so the per-node counts shown below never go stale.
+  useEffect(() => on('questions:changed', loadNodes), [loadNodes]);
 
   const childrenOf = useMemo(() => {
     const map = new Map();
@@ -100,33 +104,6 @@ export default function Sidebar({ open, onClose }) {
               }
             >
               <span aria-hidden>📊</span> My Progress
-            </NavLink>
-            <NavLink
-              to="/practice"
-              className={({ isActive }) =>
-                `flex items-center justify-between rounded-lg px-3 py-1.5 text-sm ${
-                  isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                }`
-              }
-            >
-              <span className="flex items-center gap-2">
-                <span aria-hidden>🎯</span> Practice
-              </span>
-              {dueCount > 0 && (
-                <span className="text-[11px] font-semibold bg-brand-600 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
-                  {dueCount}
-                </span>
-              )}
-            </NavLink>
-            <NavLink
-              to="/mock-interview"
-              className={({ isActive }) =>
-                `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm ${
-                  isActive ? 'bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                }`
-              }
-            >
-              <span aria-hidden>🎤</span> Mock Interview
             </NavLink>
           </div>
 

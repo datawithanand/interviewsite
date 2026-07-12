@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, getStoredToken } from '../../api/client';
 import { useAuth, isAdmin } from '../../context/AuthContext';
 import PasswordInput from '../../components/PasswordInput';
+import { emit } from '../../utils/events';
 
 async function downloadFromApi(path, defaultFilename) {
   const token = getStoredToken();
@@ -94,6 +95,7 @@ export default function ImportExportTab() {
       setPreview(null);
       setFiles([]);
       loadHistory();
+      emit('questions:changed');
     } catch (err) {
       setError(err.message);
     }

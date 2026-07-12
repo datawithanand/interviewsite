@@ -120,6 +120,40 @@ describe('Import/Export', () => {
     expect(serials).toEqual([1, 5]); // gap preserved
   });
 
+  test('import commit auto-creates only the missing segment when the parent chain already exists', async () => {
+    const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const techName = `ExistingTech_${Date.now()}`;
+    const existingMod = `ExistingMod_${Date.now()}`;
+    const newMod = `BrandNewMod_${Date.now()}`;
+
+    // Simulates the real-world case from the user's CSV: "ServiceNow > ITOM"
+    // already exist, but "Service Mapping" underneath does not yet — the
+    // commit should create just that missing leaf, reusing the existing
+    // parent chain rather than duplicating it.
+    const tech = await prisma.node.create({ data: { name: techName, createdById: (await createTestUser()).user.id } });
+    const existingModNode = await prisma.node.create({ data: { name: existingMod, parentId: tech.id, createdById: tech.createdById } });
+
+    const res = await request(app)
+      .post('/api/import-export/import/commit')
+      .set(authHeader(token))
+      .send({
+        rows: [
+          { nodePath: `${techName} > ${newMod}`, title: 'Auto-created leaf question', format: 'TEXT', questionText: 'q', answerText: 'a', difficulty: 'BEGINNER' },
+        ],
+        conflictResolution: 'skip',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.imported).toBe(1);
+
+    const siblings = await prisma.node.findMany({ where: { parentId: tech.id } });
+    expect(siblings.map((n) => n.name).sort()).toEqual([existingMod, newMod].sort());
+
+    const createdMod = siblings.find((n) => n.name === newMod);
+    const question = await prisma.question.findFirst({ where: { nodeId: createdMod.id } });
+    expect(question.title).toBe('Auto-created leaf question');
+  });
+
   test('import commit conflict resolution: skip, overwrite, renumber', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const pathStr = `ConflictTech_${Date.now()} > ConflictMod`;

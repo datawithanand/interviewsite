@@ -70,17 +70,6 @@ export default function Progress() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Link to="/practice" className="flex-1 min-w-[220px] bg-brand-600 hover:bg-brand-700 text-white rounded-lg p-4 text-center transition-colors">
-          <p className="font-semibold">🎯 Practice Review</p>
-          <p className="text-xs text-white/80 mt-0.5">Flashcard-style spaced repetition</p>
-        </Link>
-        <Link to="/mock-interview" className="flex-1 min-w-[220px] bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-lg p-4 text-center transition-colors">
-          <p className="font-semibold">🎤 Start Mock Interview</p>
-          <p className="text-xs text-white/80 mt-0.5">Timed practice under pressure</p>
-        </Link>
-      </div>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="New" value={statusCounts.NEW} />
         <StatCard label="Learning" value={statusCounts.LEARNING} accent="text-amber-600 dark:text-amber-400" />

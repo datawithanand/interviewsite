@@ -24,6 +24,7 @@ function toPublicUser(user) {
     role: user.role,
     bio: user.bio,
     profileAvatarUrl: user.profileAvatarUrl,
+    themePreference: user.themePreference,
     createdAt: user.createdAt,
     lastLogin: user.lastLogin,
   };

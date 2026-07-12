@@ -8,8 +8,6 @@ import QuestionsView from './pages/QuestionsView';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
 import Progress from './pages/Progress';
-import Practice from './pages/Practice';
-import MockInterview from './pages/MockInterview';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -42,8 +40,6 @@ export default function App() {
         <Route path="nodes/:nodeId" element={<QuestionsView />} />
         <Route path="profile" element={<Profile />} />
         <Route path="progress" element={<Progress />} />
-        <Route path="practice" element={<Practice />} />
-        <Route path="mock-interview" element={<MockInterview />} />
         <Route
           path="admin"
           element={
