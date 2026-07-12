@@ -4,6 +4,7 @@ import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContex
 import { api } from '../api/client';
 import NotificationBell from './NotificationBell';
 import ThemeSwitcher from './ThemeSwitcher';
+import Logo from './Logo';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -19,8 +20,9 @@ export default function Header({ onMenuClick }) {
       <button className="md:hidden text-xl" onClick={onMenuClick} aria-label="Open menu">
         ☰
       </button>
-      <Link to="/" className="font-semibold text-sm md:text-base flex items-center gap-1.5">
-        <span aria-hidden>🧠</span> InterviewIQ
+      <Link to="/" className="font-semibold text-sm md:text-base flex items-center gap-2">
+        <Logo size={24} />
+        InterviewIQ
       </Link>
       <div className="flex-1" />
       {gameStats && (

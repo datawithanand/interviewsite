@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth, isAdmin, isContentManagerOrAdmin } from '../context/AuthContext';
 import NodeTreeItem from './NodeTreeItem';
 import Modal from './Modal';
+import Logo from './Logo';
 import { on } from '../utils/events';
 
 export default function Sidebar({ open, onClose }) {
@@ -79,7 +80,10 @@ export default function Sidebar({ open, onClose }) {
         }`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-          <h2 className="font-semibold text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">Technologies</h2>
+          <Link to="/" className="font-semibold text-sm flex items-center gap-2" onClick={onClose}>
+            <Logo size={24} />
+            InterviewIQ
+          </Link>
           {canManage && (
             <button
               onClick={() => setAddModalParent(null)}
