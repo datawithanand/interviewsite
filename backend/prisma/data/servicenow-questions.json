@@ -1,7 +1,7 @@
 {
   "rows": [
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Which executes first — UI Policy or Client Script? When to use which?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -17,7 +17,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "incident.none → itil, incident.* → itil_admin, incident.priority → admin. If itil_admin logs in, what can they edit and why?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "Record Producer with date and time variables — map to separate date and time fields on a table.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -49,7 +49,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "Excel with 1000 records — load only from row 101. How?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -63,7 +63,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "Difference between for and forEach?",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "Difference between =, ==, and ===.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "What is Turnstile activity in Workflow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -106,7 +106,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Fetch the last five Incidents created in the system?",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -121,7 +121,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "Using Events — how to trigger a Notification and pass parameters?",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -136,7 +136,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "Ways to trigger a Notification in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -152,7 +152,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Count of Incidents priority-wise using GlideAggregate.",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -167,7 +167,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > UI Actions",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > UI Actions",
       "title": "How to pass client and server-side code in a single UI Action?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -182,7 +182,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > UI Actions",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > UI Actions",
       "title": "UI Actions — Types?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -196,7 +196,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What are ACLs? Difference between * and none.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -210,7 +210,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Reporting & Database Views",
+      "nodePath": "ServiceNow > ITSM > Data Management > Reporting & Database Views",
       "title": "Have you worked on Reports and Database Views?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -225,7 +225,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "How are Notifications managed?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -240,7 +240,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "What is an Order Guide?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -256,7 +256,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "Have you worked on Catalog Items? Explain requirements and challenges.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -303,7 +303,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "Have you worked on Data Sources and Import Sets?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -319,7 +319,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > Reference Qualifiers",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > Reference Qualifiers",
       "title": "Assignment Group and Assigned To fields are dependent — how is this configured?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -335,7 +335,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "On Notification, what is \"Weight\" and its use?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -350,7 +350,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "Difference between Approval Groups and Approval Users.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -366,7 +366,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "How to pass one activity value to another in Workflow.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -380,7 +380,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Make Short Description mandatory for a particular view only.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -394,7 +394,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Difference between UI Policy and Data Policy.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -410,7 +410,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "What is a UI Policy?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -426,7 +426,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Types of Client Scripts and use of isTemplate in onChange.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -442,7 +442,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scheduled Jobs & Background Scripts",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scheduled Jobs & Background Scripts",
       "title": "What is a Fix Script?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -458,7 +458,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Best practices while creating Business Rules?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -474,7 +474,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What is getMethod() and how to use it in a Business Rule?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -490,7 +490,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Use of GlideAggregate?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -505,7 +505,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "Use of setWorkflow() and difference between _next() and next().",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -521,7 +521,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Difference between GlideRecord and GlideRecordSecure.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -537,7 +537,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How is After Business Rule different from Async?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -553,7 +553,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "How can we pass data to the client side?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -569,7 +569,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Syntax used for Display Business Rule.",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -583,7 +583,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Business Rule real-life scenario, especially Display BR.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -599,7 +599,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "What is the use of onForeignInsert() script in a Transform Map?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -614,7 +614,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "What is addJoinQuery in GlideRecord? Where should we use it?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -628,7 +628,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > Reference Qualifiers",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > Reference Qualifiers",
       "title": "Reference qualifier — difference between Dynamic and Advanced.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -642,7 +642,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "Difference between Variables and Variable Set.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -657,7 +657,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Reporting & Database Views",
+      "nodePath": "ServiceNow > ITSM > Data Management > Reporting & Database Views",
       "title": "How to create a single report from multiple tables?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -672,7 +672,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "Some workflow activities and their explanation.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -688,7 +688,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Create an Incident record via GlideRecord, including Assignment Group?",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -703,7 +703,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Which Business Rule types should not include current.update() and why?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -718,7 +718,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "How to auto-populate logged-in user's email and location?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -733,7 +733,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How can we make a field mandatory? All possible ways.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -749,7 +749,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "Different ways to call server-side data to client side.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -765,7 +765,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Which executes first — Client Script or UI Policy?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -781,7 +781,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "What is Retroactive Start and Pause in SLA?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -795,7 +795,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Allow user to update Incident state but restrict closing it in list view. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -811,7 +811,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "What is eventQueueScheduled method?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -826,7 +826,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "Difference between Query Business Rules and ACL.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -841,7 +841,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Best practices for Business Rules?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -857,7 +857,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "If the Assignment Group has no members, stop the incident from being assigned to it. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -872,7 +872,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How to set a character limit on a single-line text field to 3 characters?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -887,7 +887,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "When Assignment Group of a Parent Incident changes, auto-update all Child Incidents. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -903,7 +903,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Can we execute an onChange Client Script during form load? How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -918,7 +918,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "When an Incident goes to Resolved state, make all fields read-only except Additional Comments. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -934,7 +934,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "Have you worked on Inbound Actions?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -949,7 +949,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "Excel with 10 columns — first 5 to Hardware table, last 5 to Software table — single upload. How?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -964,7 +964,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "Catalog Item with requester field — auto-populate details using GlideAjax.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -980,7 +980,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "Five best practices for server-side scripting.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -996,7 +996,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "Catalog Item with Manager Approval — send reminder notifications on Day 3, 6, 9 until approved/rejected. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1012,7 +1012,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "On an Incident form with a related list of Incident Tasks, hide the \"Edit\" button when the Incident is assigned to the \"Hardware\" group. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1028,7 +1028,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > User Criteria & Data Visibility",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > User Criteria & Data Visibility",
       "title": "I want a catalog item to be seen only by members of a database group. How?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1043,7 +1043,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "What is the use of \"Inherit\" and \"Global\" checkbox in a Client Script?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1059,7 +1059,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "What is the use of \"On Load\" and \"Reverse if False\" in a UI Policy?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1074,7 +1074,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "When does a UI Policy execute?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1104,7 +1104,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "Same Variable Set in two catalog items but show only 5 of 10 choices in one. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1120,7 +1120,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "What is the difference between a Variable and a Variable Set?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1135,7 +1135,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "How do you configure a Catalog Item?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1151,7 +1151,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > General & Behavioral > Experience & Background",
+      "nodePath": "ServiceNow > ITSM > General & Behavioral > Experience & Background",
       "title": "What kind of work have you done in ITSM?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1167,7 +1167,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What work have you done in Integration? Scripted REST API? Difference between PATCH and PUT? Data format?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1183,7 +1183,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "When all active Problems linked to Incidents are resolved, auto-resolve those Incidents.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1199,7 +1199,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "Trigger a notification when a Knowledge article moves from Draft to Published.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1215,7 +1215,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Auto-populate Description with Short Description and logged-in user's name on Incident submission. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1231,7 +1231,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "I want two users from a group to approve the RITM. How to configure this?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1247,7 +1247,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Show the logged-in user's manager name in a field without scripting. How?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1262,7 +1262,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Update Sets & Deployment",
+      "nodePath": "ServiceNow > ITSM > Data Management > Update Sets & Deployment",
       "title": "We have lots of update sets. How to move them from QA to Prod efficiently?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1276,7 +1276,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How can we restrict a user from submitting a form without an attachment?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1292,7 +1292,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "A field \"type\" determines record creation — Incident if \"Incident\", Problem if \"Problem\". How to achieve this?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1308,7 +1308,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "For a catalog item, I want approval on the Request. Can we do this? If yes, how?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1324,7 +1324,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "What is the difference between a Request, RITM, and a Catalog Task?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1339,7 +1339,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "Where do we use on-demand Script Includes?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1355,7 +1355,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "How many types of Script Includes are there?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1370,7 +1370,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "For a reference field value, which is better — getReference() or GlideAjax?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1384,7 +1384,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "In how many ways can we call a server-side script from the client side?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1400,7 +1400,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "On a UI Policy, there is a Global checkbox — what does it do?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1414,7 +1414,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Can we trigger an onChange Client Script on load?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1429,7 +1429,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "How many types of scripts are there in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1445,7 +1445,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "What are the types of inbound email actions?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1459,7 +1459,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Can we trigger a notification through a Business Rule?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1475,7 +1475,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Notifications & Events",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Notifications & Events",
       "title": "What are the ways to trigger a notification? Can we trigger one through a scheduled job?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1491,7 +1491,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "What is the approval coordinator and what kind of approvals can we add in it?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1506,7 +1506,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "What is a rollback activity in Workflow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1522,7 +1522,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Workflow Activities",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Workflow Activities",
       "title": "What is a turnstile activity in Workflow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1537,7 +1537,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "What is the use of a spoke in Flow Designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1553,7 +1553,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "What is the use of data pills in a flow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1569,7 +1569,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "What are the trigger types in Flow Designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1584,7 +1584,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "Have you worked on flows?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1600,7 +1600,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "You are updating Assignment Group for X incidents via background script and don't want to trigger existing Business Rules. How?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1616,7 +1616,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "What does the gsft function do?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1631,7 +1631,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "What is an on-demand Script Include?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1647,7 +1647,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scheduled Jobs & Background Scripts",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scheduled Jobs & Background Scripts",
       "title": "What is an on-demand scheduled job?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1661,7 +1661,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scheduled Jobs & Background Scripts",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scheduled Jobs & Background Scripts",
       "title": "Have you worked on scheduled jobs?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1676,7 +1676,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "Have you worked on ACL? Types? Difference between table.none and table.*?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1690,7 +1690,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "There is a P1 incident and you want to restrict users from changing priority from P1 to P2. How will you do that?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1737,7 +1737,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Based on \"Requested For\" value, auto-populate email, phone, location, and manager.",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1753,7 +1753,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "How can you call a server-side script from the client side? Tell me all possible ways.\nThere are three ways:",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -1769,7 +1769,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "What is a Business Rule and its types? Explain each of them.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1785,7 +1785,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "What is multi-row variable set?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1800,7 +1800,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > User Criteria & Data Visibility",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > User Criteria & Data Visibility",
       "title": "What is user criteria?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1815,7 +1815,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is the latest version of ServiceNow release?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1907,7 +1907,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "SLA reports show poor performance but resolution seems fine. What could be the reasons?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -1939,7 +1939,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "Multiple catalog requests are delayed due to approvals. How would you optimize the process?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2139,7 +2139,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "Why should we avoid heavy scripting in Client Scripts?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2155,7 +2155,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What are ACL scripts and why are they important?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -2171,7 +2171,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is Client–Server interaction in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2187,7 +2187,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is gs.log() vs gs.info()?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2201,7 +2201,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is the role of current and previous objects?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2216,7 +2216,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "What is GlideRecord and what is its purpose?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -2230,7 +2230,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "Difference between global Script Include and scoped Script Include.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2244,7 +2244,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "What are Script Includes and why do we use them?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2260,7 +2260,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "What is a Display Business Rule and why is it used?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2276,7 +2276,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Difference between Before and After Business Rule.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2291,7 +2291,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "What is a Business Rule and what are its types?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2305,7 +2305,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "When should you use a UI Policy instead of a Client Script?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2320,7 +2320,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Difference between Client Script and Business Rule.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2335,7 +2335,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is client-side scripting and where does it run?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2351,7 +2351,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "What is server-side scripting in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2399,7 +2399,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Can we call Business Rules in Client Scripts, and how?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2415,7 +2415,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "If I have a group where there are 200 members how can I remove them all?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2431,7 +2431,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What is E-Bonding integration?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2445,7 +2445,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What are the prerequisites required to check the feasibility of integration?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2461,7 +2461,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "How can I fetch all the RITMs and variables from a catalog REQ and create an API?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2476,7 +2476,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "If I have 10 variables how can I pass them all through events in flow designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2492,7 +2492,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "How can I cancel the execution of a flow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2506,7 +2506,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "If I want to change the SLA from 8hrs to 4hrs how to do it if it is already in production?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2522,7 +2522,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Catalog Items & Variables",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Catalog Items & Variables",
       "title": "Can we add a knowledge article in the catalog?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2536,7 +2536,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How can I create an incident to cancel another incident?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2552,7 +2552,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "If a catalog request is raised by mistake how can we cancel it?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2567,7 +2567,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "Have you worked on upgrades?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2581,7 +2581,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Client Scripts & UI Policies",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Client Scripts & UI Policies",
       "title": "What is the purpose of the \"Isolate Script\" checkbox in Client Scripts?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2596,7 +2596,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How will you setup OAuth 2.0 authentication?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2611,7 +2611,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you test integrations in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2626,7 +2626,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "How do you design a scalable approval architecture?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2642,7 +2642,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you handle bulk data transfer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2657,7 +2657,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "How does ACL evaluation work in API calls?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2672,7 +2672,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "When do you use orderBy() vs .sort()?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2687,7 +2687,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you implement a retry mechanism?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2703,7 +2703,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you avoid hardcoding credentials?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2717,7 +2717,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you secure outbound REST calls?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2732,7 +2732,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you handle error logging in REST integration?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2746,7 +2746,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you design an integration between two ServiceNow instances?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2776,7 +2776,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Approvals & Approval Workflows",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Approvals & Approval Workflows",
       "title": "What happens when one approver rejects?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2790,7 +2790,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "What is the difference between Workflow and Flow Designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2822,7 +2822,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "How do you configure approvals in Flow Designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2837,7 +2837,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "What is the difference between execute() and executeAsync()?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2851,7 +2851,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What happens if an ACL denies access through an API?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2866,7 +2866,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you configure Basic Authentication in a REST Message?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2880,7 +2880,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "How do you call another ServiceNow instance from a server-side script?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2894,7 +2894,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What is the difference between Table API and Scripted REST API?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2909,7 +2909,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What is Table API?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2924,7 +2924,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "What are function parameters (a, b)?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2938,7 +2938,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "How does && (logical AND) work?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2952,7 +2952,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "What is the difference between push() and pop()?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2966,7 +2966,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "What is .shift()?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2980,7 +2980,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "Why does .sort() not give correct numeric sorting?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -2994,7 +2994,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Core JavaScript & Scripting Fundamentals",
       "title": "How does .sort() work in JavaScript?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3008,7 +3008,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "What is coalesce and can we make more than one field as coalesce true?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3022,7 +3022,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "Explain the types of transform map scripts with a scenario.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3036,7 +3036,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Data Management > Import Sets & Transform Maps",
+      "nodePath": "ServiceNow > ITSM > Data Management > Import Sets & Transform Maps",
       "title": "What are transform maps?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3051,7 +3051,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What common challenges do you face when setting up integrations with ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3065,7 +3065,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Integrations & APIs > REST APIs & Table API",
+      "nodePath": "ServiceNow > ITSM > Integrations & APIs > REST APIs & Table API",
       "title": "What are the primary use cases for a Mid Server?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3080,7 +3080,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "How do you use the ACL debug functionality?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3094,7 +3094,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "What is the purpose of the \"Cascade variables\" checkbox in an Order Guide?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3109,7 +3109,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "Explain the \"3-record structure\" (Request, Request Item, Task) created when a catalog item is submitted.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3125,7 +3125,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > Flow Designer",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > Flow Designer",
       "title": "What are \"record pills\" or \"data pills\" in Flow Designer?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3140,7 +3140,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How do you debug a Business Rule?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3154,7 +3154,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "What are the advantages of an Async Business Rule over an After Business Rule, and vice versa?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3169,7 +3169,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scheduled Jobs & Background Scripts",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scheduled Jobs & Background Scripts",
       "title": "What is the difference between a fix script and a background script?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3185,7 +3185,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "When should you avoid using an Asynchronous Business Rule?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3199,7 +3199,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Explain a scenario where you would use a Display Business Rule instead of GlideAjax.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3215,7 +3215,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How do you prevent Business Rules and Workflows from executing?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3231,7 +3231,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "What are Retroactive Start and Retroactive Pause in SLA?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3245,7 +3245,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What is an Access Control List (ACL)?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3260,7 +3260,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Should I use current.update() in an After Update Business Rule?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3274,7 +3274,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "How do you prevent a script from executing?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3289,7 +3289,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "Scenario: When an Incident is moved to the \"Resolved\" state and the Priority is P1, a Problem record should be created automatically; what will be your approach?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -3305,7 +3305,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Script Includes & Client-Server Communication",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Script Includes & Client-Server Communication",
       "title": "What is the use of GlideAjax and can you explain with a real-time example where you have used it?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3321,7 +3321,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "What is an SLA in ServiceNow, and how do you create and configure it?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3335,7 +3335,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Business Rules",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Business Rules",
       "title": "What is a Business Rule, what are its types briefly, and how does it execute?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3350,7 +3350,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "Scenario: I want to restrict access to three specific fields on the Incident table for a particular user group using ACLs; how will you achieve this and explain step by step?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3366,7 +3366,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Workflow & Flow Designer > SLA Management",
+      "nodePath": "ServiceNow > ITSM > Workflow & Flow Designer > SLA Management",
       "title": "What do you mean by Retroactive Start and Retroactive Stop in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3380,7 +3380,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What is the difference between .none and .* ACLs?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3394,7 +3394,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Security & ACLs > ACLs & Roles",
+      "nodePath": "ServiceNow > ITSM > Security & ACLs > ACLs & Roles",
       "title": "What is an ACL in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3409,7 +3409,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scheduled Jobs & Background Scripts",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scheduled Jobs & Background Scripts",
       "title": "Open Notepad and write a background script to fetch the last 3 recently updated Incident records using an array.",
       "format": "CODE",
       "codeLanguage": "javascript",
@@ -3424,7 +3424,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > Scripting Fundamentals",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > Scripting Fundamentals",
       "title": "Which scripting languages do you know in ServiceNow?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3440,7 +3440,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Service Catalog > Order Guides & Request Fulfillment",
+      "nodePath": "ServiceNow > ITSM > Service Catalog > Order Guides & Request Fulfillment",
       "title": "How to close REQ and RITM automatically when the task is closed?",
       "format": "BOTH",
       "codeLanguage": "javascript",
@@ -3456,7 +3456,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > General & Behavioral > Experience & Background",
+      "nodePath": "ServiceNow > ITSM > General & Behavioral > Experience & Background",
       "title": "What ServiceNow modules are you most comfortable with?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3472,7 +3472,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > General & Behavioral > Experience & Background",
+      "nodePath": "ServiceNow > ITSM > General & Behavioral > Experience & Background",
       "title": "How do you gather and understand requirements?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3486,7 +3486,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > General & Behavioral > Experience & Background",
+      "nodePath": "ServiceNow > ITSM > General & Behavioral > Experience & Background",
       "title": "What kind of work do you currently do at LTIMindtree?",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3502,7 +3502,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > General & Behavioral > Experience & Background",
+      "nodePath": "ServiceNow > ITSM > General & Behavioral > Experience & Background",
       "title": "Tell me about yourself, what you work on, and your day-to-day responsibilities.",
       "format": "TEXT",
       "codeLanguage": null,
@@ -3518,7 +3518,7 @@
       ]
     },
     {
-      "nodePath": "ServiceNow > Scripting & Automation > GlideRecord & GlideAggregate",
+      "nodePath": "ServiceNow > ITSM > Scripting & Automation > GlideRecord & GlideAggregate",
       "title": "Write a script that finds all incidents that have been in the Resolved state for more than 48 hours and groups them by the Assignment Group, and for each assignment group, print the group name and the count of such incidents.",
       "format": "CODE",
       "codeLanguage": "javascript",
