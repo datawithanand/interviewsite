@@ -1,29 +1,80 @@
 import { useMemo } from 'react';
 import QuestionListCard from './QuestionListCard';
 
-// Finds the "submodule" ancestor of a leaf node — the node one level below
-// its top-level Technology — regardless of how deep the leaf actually sits.
-// If the leaf itself has no parent (a Technology being used as a leaf, with
-// no submodules under it), it is its own column.
-function submoduleAncestorOf(nodeId, nodeMap) {
+// Finds the top-level Technology ancestor of any node (walks to parentId === null).
+function technologyRootOf(nodeId, nodeMap) {
   let node = nodeMap.get(nodeId);
-  if (!node) return null;
-  while (node.parentId && nodeMap.get(node.parentId)?.parentId) {
+  while (node && node.parentId) node = nodeMap.get(node.parentId);
+  return node;
+}
+
+// Descends from the Technology root through any single-child "pass-through"
+// levels (e.g. ServiceNow -> ITSM, when ITSM is currently the only thing
+// under ServiceNow) until it reaches a level that actually branches into
+// multiple categories — that's the level whose children make sensible board
+// columns. This keeps the board useful regardless of how deep a Technology's
+// real submodules happen to be nested, and self-adjusts once more siblings
+// (e.g. ITOM, HRSD, CSM) exist at any level.
+function columnParentOf(technologyRoot, childrenOf) {
+  let node = technologyRoot;
+  while (node) {
+    const kids = childrenOf.get(node.id) || [];
+    if (kids.length !== 1) return node;
+    node = kids[0];
+  }
+  return technologyRoot;
+}
+
+// Finds the ancestor of `nodeId` that is a direct child of `columnParentId` —
+// this ancestor is the board column a question belongs in.
+function columnAncestorOf(nodeId, columnParentId, nodeMap) {
+  let node = nodeMap.get(nodeId);
+  while (node && node.parentId !== columnParentId) {
     node = nodeMap.get(node.parentId);
   }
   return node;
 }
 
-export default function QuestionsKanbanBoard({ questions, nodesById, canManage, onView, onToggleFavorite, onEdit, onDuplicate, onDelete }) {
+export default function QuestionsKanbanBoard({
+  questions,
+  nodesById,
+  canManage,
+  onView,
+  onToggleFavorite,
+  onToggleComplete,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}) {
   const columns = useMemo(() => {
+    const childrenOf = new Map();
+    for (const node of nodesById.values()) {
+      const key = node.parentId || 'root';
+      if (!childrenOf.has(key)) childrenOf.set(key, []);
+      childrenOf.get(key).push(node);
+    }
+
+    const columnParentCache = new Map();
     const groups = new Map();
+
     for (const q of questions) {
       const leafId = q.node?.id;
-      const column = leafId ? submoduleAncestorOf(leafId, nodesById) : null;
-      const key = column ? column.id : 'unfiled';
-      if (!groups.has(key)) groups.set(key, { name: column ? column.name : 'Unfiled', questions: [] });
+      if (!leafId) continue;
+
+      const techRoot = technologyRootOf(leafId, nodesById);
+      if (!techRoot) continue;
+
+      if (!columnParentCache.has(techRoot.id)) {
+        columnParentCache.set(techRoot.id, columnParentOf(techRoot, childrenOf));
+      }
+      const columnParent = columnParentCache.get(techRoot.id);
+      const column = columnAncestorOf(leafId, columnParent.id, nodesById) || columnParent;
+
+      const key = column.id;
+      if (!groups.has(key)) groups.set(key, { name: column.name, questions: [] });
       groups.get(key).questions.push(q);
     }
+
     return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name));
   }, [questions, nodesById]);
 
@@ -46,6 +97,7 @@ export default function QuestionsKanbanBoard({ questions, nodesById, canManage, 
                 canManage={canManage}
                 onView={() => onView(q)}
                 onToggleFavorite={() => onToggleFavorite(q)}
+                onToggleComplete={() => onToggleComplete(q)}
                 onEdit={() => onEdit(q)}
                 onDuplicate={() => onDuplicate(q)}
                 onDelete={() => onDelete(q)}

@@ -162,6 +162,12 @@ export default function QuestionsView() {
     load();
   };
 
+  const toggleComplete = async (q) => {
+    if (q.completedByMe) await api.del(`/questions/${q.id}/complete`);
+    else await api.post(`/questions/${q.id}/complete`, {});
+    load();
+  };
+
   const deleteQuestion = async (q) => {
     if (!window.confirm(`Delete question "${q.title}"?`)) return;
     await api.del(`/questions/${q.id}`);
@@ -396,6 +402,7 @@ export default function QuestionsView() {
           canManage={canManage}
           onView={(q) => setDetailId(q.id)}
           onToggleFavorite={toggleFavorite}
+          onToggleComplete={toggleComplete}
           onEdit={(q) => {
             setEditingQuestion(q);
             setFormOpen(true);
@@ -413,6 +420,7 @@ export default function QuestionsView() {
               canManage={canManage}
               onView={() => setDetailId(q.id)}
               onToggleFavorite={() => toggleFavorite(q)}
+              onToggleComplete={() => toggleComplete(q)}
               onEdit={() => {
                 setEditingQuestion(q);
                 setFormOpen(true);

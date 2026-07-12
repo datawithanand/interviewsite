@@ -194,6 +194,34 @@ describe('Questions', () => {
     expect(unfav.status).toBe(204);
   });
 
+  test('marking a question complete is per-user, persisted, and reversible', async () => {
+    const { token: userAToken } = await createTestUser({ role: ROLES.REGULAR_USER });
+    const { token: userBToken } = await createTestUser({ role: ROLES.REGULAR_USER });
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const node = await createTestNode();
+    const created = await createQuestion(cmToken, node.id);
+    const questionId = created.body.question.id;
+
+    const complete = await request(app).post(`/api/questions/${questionId}/complete`).set(authHeader(userAToken));
+    expect(complete.status).toBe(204);
+
+    const asA = await request(app).get(`/api/questions/${questionId}`).set(authHeader(userAToken));
+    expect(asA.body.question.completedByMe).toBe(true);
+
+    // Per-user: userB never marked it, so it must not show as complete for them.
+    const asB = await request(app).get(`/api/questions/${questionId}`).set(authHeader(userBToken));
+    expect(asB.body.question.completedByMe).toBe(false);
+
+    const list = await request(app).get('/api/questions').query({ nodeId: node.id }).set(authHeader(userAToken));
+    expect(list.body.questions.find((q) => q.id === questionId).completedByMe).toBe(true);
+
+    const uncomplete = await request(app).delete(`/api/questions/${questionId}/complete`).set(authHeader(userAToken));
+    expect(uncomplete.status).toBe(204);
+
+    const asAAfterUndo = await request(app).get(`/api/questions/${questionId}`).set(authHeader(userAToken));
+    expect(asAAfterUndo.body.question.completedByMe).toBe(false);
+  });
+
   test('search filters across questionText/questionCode/answerText/answerCode', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();

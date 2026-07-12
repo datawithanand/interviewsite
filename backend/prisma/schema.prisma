@@ -48,6 +48,7 @@ model User {
   questions              Question[]         @relation("QuestionCreator")
   questionVersions       QuestionVersion[]
   favorites              Favorite[]
+  completions            QuestionCompletion[]
   auditLogs              AuditLog[]
   importsExports         ImportExport[]
   nodesCreated           Node[]
@@ -124,6 +125,7 @@ model Question {
 
   versions    QuestionVersion[]
   favorites   Favorite[]
+  completions QuestionCompletion[]
   comments    Comment[]
   progress    QuestionProgress[]
   mockAnswers MockInterviewAnswer[]
@@ -230,6 +232,21 @@ model Favorite {
   questionId String
   question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@index([questionId])
+}
+
+// Per-user "mark as complete" checkbox on a question — deliberately separate
+// from QuestionProgress (the spaced-repetition state), since this is just a
+// plain personal checklist toggle with an undo, not a review/grading flow.
+model QuestionCompletion {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  completedAt DateTime @default(now())
 
   @@unique([userId, questionId])
   @@index([questionId])

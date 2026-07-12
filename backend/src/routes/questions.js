@@ -23,7 +23,7 @@ function snapshotOf(question) {
   return snap;
 }
 
-function serializeQuestion(q, favoritedByMe = false) {
+function serializeQuestion(q, favoritedByMe = false, completedByMe = false) {
   return {
     id: q.id,
     nodeId: q.nodeId,
@@ -45,6 +45,7 @@ function serializeQuestion(q, favoritedByMe = false) {
     viewCount: q.viewCount,
     favoriteCount: q._count ? q._count.favorites : undefined,
     favoritedByMe,
+    completedByMe,
   };
 }
 
@@ -156,7 +157,7 @@ router.get('/', authenticate, async (req, res, next) => {
       serial: { serialNumber: 'asc' },
     }[q.sort];
 
-    const [total, questions, myFavorites] = await Promise.all([
+    const [total, questions, myFavorites, myCompletions] = await Promise.all([
       prisma.question.count({ where }),
       prisma.question.findMany({
         where,
@@ -170,15 +171,17 @@ router.get('/', authenticate, async (req, res, next) => {
         },
       }),
       prisma.favorite.findMany({ where: { userId: req.user.id }, select: { questionId: true } }),
+      prisma.questionCompletion.findMany({ where: { userId: req.user.id }, select: { questionId: true } }),
     ]);
 
     const favoriteSet = new Set(myFavorites.map((f) => f.questionId));
+    const completedSet = new Set(myCompletions.map((c) => c.questionId));
 
     res.json({
       total,
       page: q.page,
       pageSize: q.pageSize,
-      questions: questions.map((qq) => serializeQuestion(qq, favoriteSet.has(qq.id))),
+      questions: questions.map((qq) => serializeQuestion(qq, favoriteSet.has(qq.id), completedSet.has(qq.id))),
     });
   } catch (err) {
     next(err);
@@ -199,11 +202,12 @@ router.get('/:id', authenticate, async (req, res, next) => {
 
     if (!question) return res.status(404).json({ error: 'Question not found.' });
 
-    const favorite = await prisma.favorite.findUnique({
-      where: { userId_questionId: { userId: req.user.id, questionId: question.id } },
-    });
+    const [favorite, completion] = await Promise.all([
+      prisma.favorite.findUnique({ where: { userId_questionId: { userId: req.user.id, questionId: question.id } } }),
+      prisma.questionCompletion.findUnique({ where: { userId_questionId: { userId: req.user.id, questionId: question.id } } }),
+    ]);
 
-    res.json({ question: serializeQuestion(question, !!favorite) });
+    res.json({ question: serializeQuestion(question, !!favorite, !!completion) });
   } catch (err) {
     next(err);
   }
@@ -465,6 +469,32 @@ router.post('/:id/favorite', authenticate, async (req, res, next) => {
 router.delete('/:id/favorite', authenticate, async (req, res, next) => {
   try {
     await prisma.favorite
+      .delete({ where: { userId_questionId: { userId: req.user.id, questionId: req.params.id } } })
+      .catch(() => null);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Personal "mark as complete" checkbox — per user, persisted server-side so
+// it follows the user across browsers/devices, with a plain undo (DELETE).
+router.post('/:id/complete', authenticate, async (req, res, next) => {
+  try {
+    await prisma.questionCompletion.upsert({
+      where: { userId_questionId: { userId: req.user.id, questionId: req.params.id } },
+      create: { userId: req.user.id, questionId: req.params.id },
+      update: {},
+    });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/:id/complete', authenticate, async (req, res, next) => {
+  try {
+    await prisma.questionCompletion
       .delete({ where: { userId_questionId: { userId: req.user.id, questionId: req.params.id } } })
       .catch(() => null);
     res.status(204).send();
