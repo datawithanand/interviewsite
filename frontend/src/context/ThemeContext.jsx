@@ -2,26 +2,28 @@ import { createContext, useContext, useEffect, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
-// Selectable themes:
+// Selectable themes — temporarily reduced to just Light/Dark at the user's
+// request (the gradient/glass themes below are disabled, not deleted, so
+// they can be restored later by uncommenting):
+//
+// const THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
+// const GLASS_THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate'];
+//
 //  - 'ocean': the original branded blue/teal gradient (same as Login/
-//    Register), default on first visit.
+//    Register).
 //  - 'sunset', 'forest', 'midnight', 'slate': four additional gradient
-//    "glass" themes added alongside ocean, following the exact same
-//    Tailwind-dark + glass-reskin architecture (see styles/index.css) so
-//    ocean/light/dark are never touched.
+//    "glass" themes, following the exact same Tailwind-dark + glass-reskin
+//    architecture (see styles/index.css).
 //  - 'dark': a plain flat dark theme (Tailwind's dark: colors, no gradient).
-//  - 'light': a plain flat light theme (Tailwind's default light colors).
-const THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
-
-// Every theme except 'light' runs on Tailwind's dark: utility classes as its
-// base. Every theme except plain 'light'/'dark' additionally gets a glass
-// re-skin class matching its own name (see styles/index.css).
-const GLASS_THEMES = ['ocean', 'sunset', 'forest', 'midnight', 'slate'];
+//  - 'light': a plain flat light theme (Tailwind's default light colors),
+//    now the default.
+const THEMES = ['light', 'dark'];
+const GLASS_THEMES = [];
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
     const stored = localStorage.getItem('theme');
-    return THEMES.includes(stored) ? stored : 'ocean';
+    return THEMES.includes(stored) ? stored : 'light';
   });
 
   useEffect(() => {

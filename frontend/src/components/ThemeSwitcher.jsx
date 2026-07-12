@@ -3,12 +3,14 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 
+// Temporarily reduced to Light/Dark only — the rest are disabled, not
+// deleted, so they're easy to bring back later:
+// { value: 'ocean', label: 'Ocean', icon: '🌊' },
+// { value: 'sunset', label: 'Sunset', icon: '🌇' },
+// { value: 'forest', label: 'Forest', icon: '🌲' },
+// { value: 'midnight', label: 'Midnight', icon: '🌌' },
+// { value: 'slate', label: 'Slate', icon: '🪨' },
 const OPTIONS = [
-  { value: 'ocean', label: 'Ocean', icon: '🌊' },
-  { value: 'sunset', label: 'Sunset', icon: '🌇' },
-  { value: 'forest', label: 'Forest', icon: '🌲' },
-  { value: 'midnight', label: 'Midnight', icon: '🌌' },
-  { value: 'slate', label: 'Slate', icon: '🪨' },
   { value: 'light', label: 'Light', icon: '☀️' },
   { value: 'dark', label: 'Dark', icon: '🌙' },
 ];

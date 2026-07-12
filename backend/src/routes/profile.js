@@ -11,7 +11,10 @@ const { revokeAllSessionsForUser } = require('../utils/session');
 
 const router = express.Router();
 
-const THEME_VALUES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
+// Temporarily reduced to Light/Dark only, per product decision — restore
+// by uncommenting the full list below when the other themes come back.
+// const THEME_VALUES = ['ocean', 'sunset', 'forest', 'midnight', 'slate', 'light', 'dark'];
+const THEME_VALUES = ['light', 'dark'];
 
 const profileUpdateSchema = z.object({
   email: z.string().trim().email().optional().nullable(),
