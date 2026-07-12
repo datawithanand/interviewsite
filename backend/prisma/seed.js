@@ -1,8 +1,14 @@
-/* Seeds a sample multi-technology hierarchy and questions for local
- * exploration/demo, plus the default security-question template pool.
- * Run with: npm run seed
+/* Seeds the real ServiceNow interview-question bank (232 questions, migrated
+ * from a prior personal site and reclassified into this app's Technology >
+ * Submodule > Topic hierarchy — see prisma/data/servicenow-questions.json),
+ * plus the default security-question template pool. Run with: npm run seed
+ *
+ * Safe to re-run: each row is skipped if a question with the same title
+ * already exists under its target node, so it won't duplicate on a second run.
  */
 require('dotenv').config();
+const path = require('path');
+const fs = require('fs');
 const prisma = require('../src/db');
 const { hashPassword } = require('../src/utils/password');
 const { ROLES } = require('../src/utils/enums');
@@ -14,95 +20,12 @@ const DEFAULT_SECURITY_QUESTION_TEMPLATES = [
   'What was your childhood nickname?',
 ];
 
-// Each top-level entry is a Technology. `children` nests Submodule / Child
-// module entries to unlimited depth; only leaf entries carry `questions`.
-const TECHNOLOGIES = [
-  {
-    name: 'ServiceNow',
-    children: [
-      {
-        name: 'ITSM',
-        children: [
-          {
-            name: 'Incident Management',
-            questions: [
-              {
-                title: 'What is an Incident in ServiceNow?',
-                format: 'TEXT',
-                answerText:
-                  'An incident is an unplanned interruption to a service or a reduction in quality of a service. It differs from a Problem, which is the underlying cause of one or more incidents.',
-                difficulty: 'BEGINNER',
-                tags: ['incident', 'itsm-core'],
-              },
-              {
-                title: 'Auto-assign an incident based on category',
-                format: 'CODE',
-                codeLanguage: 'javascript',
-                questionCode:
-                  "(function executeRule(current, previous) {\n  if (current.category == 'network') {\n    current.assignment_group = gs.getProperty('network_team_sys_id');\n  }\n})(current, previous);",
-                difficulty: 'INTERMEDIATE',
-                tags: ['incident', 'business-rule'],
-              },
-            ],
-          },
-          {
-            name: 'Change Management',
-            questions: [
-              {
-                title: 'Explain the three change types in ServiceNow',
-                format: 'TEXT',
-                answerText:
-                  'Standard changes are pre-approved, low-risk, repeatable. Normal changes require CAB approval and follow the full workflow. Emergency changes are made to resolve an incident quickly and are approved retroactively.',
-                difficulty: 'BEGINNER',
-                tags: ['change', 'itsm-core'],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: 'ITOM',
-        children: [
-          {
-            name: 'Discovery',
-            questions: [
-              {
-                title: 'What is Discovery in ITOM?',
-                format: 'BOTH',
-                codeLanguage: 'javascript',
-                questionText:
-                  'Discovery scans the network to find and populate CIs in the CMDB automatically, using credentials and probes/sensors. Query discovered CIs like this:',
-                questionCode:
-                  "var gr = new GlideRecord('cmdb_ci_server');\ngr.addQuery('install_status', 1);\ngr.query();\nwhile (gr.next()) {\n  gs.info(gr.getValue('name'));\n}",
-                difficulty: 'INTERMEDIATE',
-                tags: ['itom', 'discovery'],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'Python',
-    children: [
-      {
-        name: 'Core Python',
-        questions: [
-          {
-            title: 'What is the difference between a list and a tuple?',
-            format: 'TEXT',
-            answerText: 'Lists are mutable and defined with [], tuples are immutable and defined with (). Tuples are hashable if their contents are, so they can be used as dict keys; lists cannot.',
-            difficulty: 'BEGINNER',
-            tags: ['python', 'core'],
-          },
-        ],
-      },
-    ],
-  },
-];
+const QUESTIONS_FILE = path.join(__dirname, 'data', 'servicenow-questions.json');
+const PATH_SEPARATOR = ' > ';
 
-async function createNodeChain(names, createdById) {
+async function createNodeChain(names, createdById, cache) {
+  const key = names.join(PATH_SEPARATOR);
+  if (cache.has(key)) return cache.get(key);
   let parentId = null;
   let node = null;
   for (const name of names) {
@@ -114,45 +37,54 @@ async function createNodeChain(names, createdById) {
     }
     parentId = node.id;
   }
+  cache.set(key, node);
   return node;
 }
 
-async function seedTree(entry, parentPath, createdById) {
-  const path = [...parentPath, entry.name];
-  if (entry.questions) {
-    const node = await createNodeChain(path, createdById);
-    for (const q of entry.questions) {
-      const serialNumber = node.nextSerial;
-      // eslint-disable-next-line no-await-in-loop
-      const clash = await prisma.question.findUnique({ where: { nodeId_serialNumber: { nodeId: node.id, serialNumber } } });
-      if (clash) continue;
-      // eslint-disable-next-line no-await-in-loop
-      await prisma.question.create({
-        data: {
-          nodeId: node.id,
-          serialNumber,
-          title: q.title,
-          format: q.format,
-          codeLanguage: q.codeLanguage || null,
-          questionText: q.questionText || null,
-          questionCode: q.questionCode || null,
-          answerText: q.answerText || null,
-          answerCode: q.answerCode || null,
-          difficulty: q.difficulty,
-          tags: JSON.stringify(q.tags || []),
-          createdById,
-        },
-      });
-      // eslint-disable-next-line no-await-in-loop
-      await prisma.node.update({ where: { id: node.id }, data: { nextSerial: serialNumber + 1 } });
+async function seedQuestions(createdById) {
+  const { rows } = JSON.parse(fs.readFileSync(QUESTIONS_FILE, 'utf8'));
+  const nodeCache = new Map();
+  let created = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    const segments = row.nodePath.split(PATH_SEPARATOR);
+    // eslint-disable-next-line no-await-in-loop
+    const node = await createNodeChain(segments, createdById, nodeCache);
+
+    // eslint-disable-next-line no-await-in-loop
+    const existing = await prisma.question.findFirst({ where: { nodeId: node.id, title: row.title } });
+    if (existing) {
+      skipped += 1;
+      continue;
     }
+
+    const serialNumber = node.nextSerial;
+    // eslint-disable-next-line no-await-in-loop
+    await prisma.question.create({
+      data: {
+        nodeId: node.id,
+        serialNumber,
+        title: row.title,
+        format: row.format,
+        codeLanguage: row.codeLanguage || null,
+        questionText: row.questionText || null,
+        questionCode: row.questionCode || null,
+        answerText: row.answerText || null,
+        answerCode: row.answerCode || null,
+        difficulty: row.difficulty,
+        tags: JSON.stringify(row.tags || []),
+        createdById,
+      },
+    });
+    // eslint-disable-next-line no-await-in-loop
+    await prisma.node.update({ where: { id: node.id }, data: { nextSerial: serialNumber + 1 } });
+    node.nextSerial = serialNumber + 1;
+    created += 1;
   }
-  if (entry.children) {
-    for (const child of entry.children) {
-      // eslint-disable-next-line no-await-in-loop
-      await seedTree(child, path, createdById);
-    }
-  }
+
+  // eslint-disable-next-line no-console
+  console.log(`Questions seeded: ${created} created, ${skipped} already present.`);
 }
 
 async function main() {
@@ -182,10 +114,7 @@ async function main() {
     console.log('Created seed admin user: admin / AdminPass123 (change this immediately)');
   }
 
-  for (const tech of TECHNOLOGIES) {
-    // eslint-disable-next-line no-await-in-loop
-    await seedTree(tech, [], admin.id);
-  }
+  await seedQuestions(admin.id);
 
   // eslint-disable-next-line no-console
   console.log('Seed complete.');
