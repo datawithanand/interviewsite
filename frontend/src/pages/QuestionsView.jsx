@@ -47,6 +47,7 @@ export default function QuestionsView() {
   const [sort, setSort] = useState('serial');
   const [view, setView] = useState('list');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [completedFilter, setCompletedFilter] = useState(''); // '' | 'true' | 'false'
   const [allNodes, setAllNodes] = useState([]);
   const [techFilter, setTechFilter] = useState('');
 
@@ -129,6 +130,7 @@ export default function QuestionsView() {
     if (difficulty) params.set('difficulty', difficulty);
     if (format) params.set('format', format);
     if (favoritesOnly) params.set('favoritesOnly', 'true');
+    if (completedFilter) params.set('completed', completedFilter);
     params.set('sort', sort);
     params.set('pageSize', '100');
 
@@ -140,7 +142,7 @@ export default function QuestionsView() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [nodeId, techFilter, search, difficulty, format, sort, favoritesOnly]);
+  }, [nodeId, techFilter, search, difficulty, format, sort, favoritesOnly, completedFilter]);
 
   useEffect(() => {
     load();
@@ -323,6 +325,15 @@ export default function QuestionsView() {
           <input type="checkbox" checked={favoritesOnly} onChange={(e) => setFavoritesOnly(e.target.checked)} />
           Favorites
         </label>
+        <select
+          className="rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1.5 text-sm"
+          value={completedFilter}
+          onChange={(e) => setCompletedFilter(e.target.value)}
+        >
+          <option value="">All questions</option>
+          <option value="false">Not completed</option>
+          <option value="true">Completed</option>
+        </select>
 
         <div className="relative">
           <button

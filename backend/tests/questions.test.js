@@ -222,6 +222,28 @@ describe('Questions', () => {
     expect(asAAfterUndo.body.question.completedByMe).toBe(false);
   });
 
+  test('the completed filter scopes the list to only completed or only incomplete questions, per user', async () => {
+    const { token: cmToken } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
+    const { token: userToken } = await createTestUser({ role: ROLES.REGULAR_USER });
+    const node = await createTestNode();
+    const done = await createQuestion(cmToken, node.id, { title: 'Done one' });
+    const notDone = await createQuestion(cmToken, node.id, { title: 'Not done one' });
+
+    await request(app).post(`/api/questions/${done.body.question.id}/complete`).set(authHeader(userToken));
+
+    const completedOnly = await request(app)
+      .get('/api/questions')
+      .query({ nodeId: node.id, completed: 'true' })
+      .set(authHeader(userToken));
+    expect(completedOnly.body.questions.map((q) => q.id)).toEqual([done.body.question.id]);
+
+    const incompleteOnly = await request(app)
+      .get('/api/questions')
+      .query({ nodeId: node.id, completed: 'false' })
+      .set(authHeader(userToken));
+    expect(incompleteOnly.body.questions.map((q) => q.id)).toEqual([notDone.body.question.id]);
+  });
+
   test('search filters across questionText/questionCode/answerText/answerCode', async () => {
     const { token } = await createTestUser({ role: ROLES.CONTENT_MANAGER });
     const node = await createTestNode();

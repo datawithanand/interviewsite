@@ -119,6 +119,7 @@ router.get('/', authenticate, async (req, res, next) => {
       q: z.string().optional(),
       createdBy: z.string().optional(),
       favoritesOnly: z.string().optional(),
+      completed: z.enum(['true', 'false']).optional(),
       sort: z.enum(['newest', 'oldest', 'mostViewed', 'serial']).optional().default('serial'),
       page: z.coerce.number().int().positive().optional().default(1),
       pageSize: z.coerce.number().int().positive().max(100).optional().default(25),
@@ -148,6 +149,11 @@ router.get('/', authenticate, async (req, res, next) => {
     }
     if (q.favoritesOnly === 'true') {
       where.favorites = { some: { userId: req.user.id } };
+    }
+    if (q.completed === 'true') {
+      where.completions = { some: { userId: req.user.id } };
+    } else if (q.completed === 'false') {
+      where.completions = { none: { userId: req.user.id } };
     }
 
     const orderBy = {
